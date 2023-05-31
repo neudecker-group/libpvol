@@ -1,0 +1,16 @@
+srcs += files(
+  'born.f90',
+  'bisectsearch.f90',
+  'cm5.f90',
+  'gbsa.f90',
+  'input.F90',
+  'kernel.f90',
+  'lebedev.f90',
+  'model.f90',
+  'sasa.f90',
+  'solvation_math_wrapper.f90',
+  'state.f90',
+  'type.f90',
+  'util.F90',
+  'vdwrad.f90',
+)
