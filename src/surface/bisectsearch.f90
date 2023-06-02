@@ -22,7 +22,7 @@
 !================================================================================!
 
 !> Implements search algorithms
-module solvation_solv_search
+module xhcff_surface_search
    use iso_fortran_env, only : wp => real64
    implicit none
    private
@@ -143,4 +143,4 @@ pure subroutine bisectSearchReal(j, xx, x, tol)
 end subroutine bisectSearchReal
 
 
-end module solvation_solv_search
+end module xhcff_surface_search

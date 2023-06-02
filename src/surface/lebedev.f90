@@ -29,7 +29,7 @@
 !  V.I. Lebedev, and D.N. Laikov, "A quadrature formula for the sphere of the
 !  131st algebraic order of accuracy", Doklady Mathematics, Vol. 59, No. 3,
 !  1999, pp. 477-481.
-module solvation_solv_lebedev
+module xhcff_surface_lebedev
    use iso_fortran_env, only : wp => real64
    implicit none
 
@@ -5084,4 +5084,4 @@ pure subroutine ld5810(x, w, n)
    n = n-1
 end subroutine ld5810
 
-end module solvation_solv_lebedev
+end module xhcff_surface_lebedev

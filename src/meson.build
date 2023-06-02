@@ -1,5 +1,5 @@
 
-# subdir('surface')
+subdir('surface')
 
 srcs += files(
    'xhcff_engrad.f90',

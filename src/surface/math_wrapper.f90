@@ -16,7 +16,7 @@
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with xhcfflib.  If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
-module solvation_math_wrapper
+module xhcff_surface_math_wrapper
 !> module solvation_math_wrapper
 !> contains some interfaces to LAPACK and BLAS routines
 !> which must be included via a suitable library.
@@ -262,4 +262,4 @@ contains
     call dgemv_wrap(aptr,xvec,yptr,alpha,beta,tra)
   end subroutine dgemv312_wrap
 !=======================================================================================!
-end module solvation_math_wrapper
+end module xhcff_surface_math_wrapper

@@ -36,7 +36,7 @@ Follow these steps to build the project:
      ```bash
      FC=ifort CC=icc meson ..
      ```
-   I you wish to build the test-binary, add `-DBUILD_EXE=true` to either the `cmake` or `meson` setup command.
+   I you wish to build the test-binary, add `-Dbuild_exe=true` to either the `cmake` or `meson` setup command.
 
 
 3. Depending on your chosen build system, build the project. If you have multiple cores/processors, you can speed up the build process by specifying the number of cores to use with the `-j` option. For example, to use 4 cores:

@@ -20,6 +20,7 @@ program xhcfflib_main_tester
     use iso_fortran_env, only: wp=>real64,stdout=>output_unit
     use testmol
     use xhcff_interface
+    use xhcff_surface_module
     implicit none
     
     integer :: nat
@@ -38,6 +39,8 @@ program xhcfflib_main_tester
    logical :: fail,pr
    integer :: io
    type(xhcff_data) :: dat
+
+   type(surface_calculator) :: surf
 
 !========================================================================================!
     fail = .false.
@@ -59,6 +62,60 @@ program xhcfflib_main_tester
       write(*,'(2x,i3,3x,3f16.6)') at(i),xyz(1:3,i)
     enddo
     call writetestcoord()
+
+!=======================================================================================!
+!=======================================================================================!
+!> STANDARD USAGE
+!=======================================================================================!
+!=======================================================================================!
+
+    write(*,*)
+    write(*,*) '================================================================'
+    write(*,*) '===================== SASA CALCULATION ========================='
+    write(*,*) '================================================================'
+
+
+    !> default probe size (1.5 Angstroem)
+    write(*,*)
+    call surf%setup(nat,at,xyz,.true.)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme)
+
+
+
+    !> smaller probe
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,probe=1.0_wp)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight, probe=1.0_wp)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight, probe=1.0_wp)
+
+    write(*,*)
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=1.0_wp)
+
+
+    write(*,*)
+    write(*,*) '========================== END ================================='
+    write(*,*) '==================== SASA CALCULATION =========================='
+    write(*,*) '========================== END ================================='
+
 
 !=======================================================================================!
 !=======================================================================================!
