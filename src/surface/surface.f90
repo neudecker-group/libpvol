@@ -39,6 +39,8 @@ module xhcff_surface_module
    !use solvation_type_solvation, only : TSolvation
 
    use xhcff_surface_vdwradd3, only: vanDerWaalsRadD3
+
+   use tesspoints, only : tesspts
    implicit none
    private
 
@@ -109,6 +111,9 @@ module xhcff_surface_module
 
       !> all pairs vector differences and magnitudes array
       real(wp), allocatable :: ddpair(:, :)
+
+      !> tesselation info for each atom
+      type(tesspts), allocatable :: tess(:)
 
       !> Atom specific surface data
       real(wp), allocatable :: vdwsa(:)
@@ -330,6 +335,7 @@ subroutine setup_surface_calculator(self,nat,at,xyz,pr,ngrid,probe)
     call self%info(stdout)
    endif
 
+   allocate(self%tess(nat))
 end subroutine setup_surface_calculator
 
 
@@ -532,6 +538,7 @@ subroutine deallocate_surface_calculator(self)
    if(allocated(self%dsdrt)    )deallocate(self%dsdrt)
    if(allocated(self%angGrid)  )deallocate(self%angGrid)
    if(allocated(self%angWeight))deallocate(self%angWeight)
+   if(allocated(self%tess))deallocate(self%tess)
 
 end subroutine deallocate_surface_calculator
 
@@ -557,7 +564,7 @@ subroutine update(self, num, xyz)
    ! compute solvent accessible surface and its derivatives
    call compute_numsa(self%nat, self%nnsas, self%nnlists, xyz, self%vdwsa, &
       & self%wrp, self%trj2, self%angWeight, self%angGrid, &
-      & self%sasa, self%dsdrt)
+      & self%sasa, self%dsdrt, self%tess)
 
    ! contract surface gradient (if we have the surface tension)
    if(allocated(self%gamsasa))then 

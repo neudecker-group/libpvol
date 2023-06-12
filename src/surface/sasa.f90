@@ -24,6 +24,7 @@
 !> Non-polar solvent accessible surface area model
 module xhcff_surface_sasa
    use iso_fortran_env, only : wp => real64
+   use tesspoints, only : tesspts
    implicit none
    private
 
@@ -45,7 +46,7 @@ contains
 
 
 subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
-      & wrp, trj2, angWeight, angGrid, sasa, dsdrt)
+      & wrp, trj2, angWeight, angGrid, sasa, dsdrt, tess)
 
    !> Number of atoms
    integer, intent(in) :: nat
@@ -80,10 +81,14 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    !> Derivative of surface area w.r.t. cartesian coordinates
    real(wp), intent(out) :: dsdrt(:, :, :)
 
+
+   type(tesspts), intent(out) :: tess(:)
+
    integer :: iat, jat, ip, jj, nnj, nnk, nni, nno
    real(wp) :: rsas, sasai, xyza(3), xyzp(3), sasap, wr, wsa, drjj(3)
    real(wp), allocatable :: grds(:, :), grads(:, :)
    integer, allocatable :: grdi(:)
+
 
    sasa(:) = 0.0_wp
    dsdrt(:, :, :) = 0.0_wp
