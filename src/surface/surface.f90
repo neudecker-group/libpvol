@@ -538,7 +538,7 @@ subroutine deallocate_surface_calculator(self)
    if(allocated(self%dsdrt)    )deallocate(self%dsdrt)
    if(allocated(self%angGrid)  )deallocate(self%angGrid)
    if(allocated(self%angWeight))deallocate(self%angWeight)
-   if(allocated(self%tess))deallocate(self%tess)
+   if(allocated(self%tess)     )deallocate(self%tess)
 
 end subroutine deallocate_surface_calculator
 

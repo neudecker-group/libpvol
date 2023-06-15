@@ -22,6 +22,7 @@
 !================================================================================!
 
 !> Non-polar solvent accessible surface area model
+!> calculate SAS implemented as eq 6-10 in 10.1021/acs.jctc.1c00471
 module xhcff_surface_sasa
    use iso_fortran_env, only : wp => real64
    use tesspoints, only : tesspts
@@ -35,12 +36,18 @@ module xhcff_surface_sasa
    real(wp), parameter :: aatoau = 1.0_wp / autoaa
    real(wp), parameter :: w = 0.3_wp*aatoau
    real(wp), parameter :: w3 = w*(w*w)
+   ! const part of eq 6
    real(wp), parameter :: ah0 = 0.5_wp
+   ! const 2nd part of eq 6
    real(wp), parameter :: ah1 = 3._wp/(4.0_wp*w)
+   ! const 3rd part of eq 6
    real(wp), parameter :: ah3 = -1._wp/(4.0_wp*w3)
 
    !> real space cut-offs
    real(wp), parameter :: tolsesp=1.e-6_wp
+
+   !> pi
+   real(wp), parameter :: pi = 3.14159265359
 
 contains
 
@@ -81,14 +88,15 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    !> Derivative of surface area w.r.t. cartesian coordinates
    real(wp), intent(out) :: dsdrt(:, :, :)
 
+   ! make output
+   type(tesspts), intent(in) :: tess(:)
 
-   type(tesspts), intent(out) :: tess(:)
+   real(wp) :: tj(3),tj2
 
    integer :: iat, jat, ip, jj, nnj, nnk, nni, nno
    real(wp) :: rsas, sasai, xyza(3), xyzp(3), sasap, wr, wsa, drjj(3)
-   real(wp), allocatable :: grds(:, :), grads(:, :)
+   real(wp), allocatable :: grds(:, :), grads(:, :)! , tessxyz(:,:), areas(:)
    integer, allocatable :: grdi(:)
-
 
    sasa(:) = 0.0_wp
    dsdrt(:, :, :) = 0.0_wp
@@ -98,10 +106,10 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    allocate(grds(3,maxval(nnsas)))
    allocate(grdi(maxval(nnsas)))
 
-   !$omp parallel do default(none) shared(sasa, dsdrt) &
-   !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
-   !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
-   !$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
+   !#$omp parallel do default(none) shared(sasa, dsdrt) &
+   !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
+   !#$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
+   !#$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
    do iat = 1, nat
 
       rsas = vdwsa(iat)
@@ -121,13 +129,17 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
          ! grid point position
          xyzp(:) = xyza(:) + rsas*angGrid(1:3,ip)
          ! atomic surface function at the grid point
+         ! compute the distance to the atom
+
          call compute_w_sp(nat, nnlists(:nno, iat), trj2, vdwsa, xyz, nno, xyzp, &
             & sasap, grds, nni, grdi)
 
          if(sasap.gt.tolsesp) then
+            if(sasap == 0.0_wp) then
+            end if
             ! numerical quadrature weight
             wsa = angWeight(ip)*wr*sasap
-            ! accumulate the surface area
+            ! accumulate the surface area, sum in eq 10
             sasai = sasai + wsa
             ! accumulate the surface gradient
             do jj = 1, nni
@@ -138,8 +150,8 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
             end do
          end if
       end do
-
-      sasa(iat) = sasai
+      ! finalize eq 10
+      sasa(iat) = sasai * 4.0_wp * pi
       dsdrt(:,:,iat) = grads
 
    end do
@@ -182,13 +194,16 @@ pure subroutine compute_w_sp(nat,nnlists,trj2,vdwsa,xyza,nno,xyzp,sasap,grds, &
             sasap=0.0_wp
             return
          else
+
             sqtj = sqrt(tj2)
+            ! r in eq. 6
             uj = sqtj - vdwsa(ia)
             ah3uj2 = ah3*uj*uj
             dsasaij = ah1+3.0_wp*ah3uj2
+            !eq 6, evaluation of atomic volume exclusion function
             sasaij =  ah0+(ah1+ah3uj2)*uj
 
-            ! accumulate the molecular surface
+            ! accumulate the molecular surface, product in eq. 10
             sasap = sasap*sasaij
             ! compute the gradient wrt the neighbor
             dsasaij = dsasaij/(sasaij*sqtj)

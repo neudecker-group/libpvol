@@ -76,40 +76,43 @@ program xhcfflib_main_tester
 
 
     !> default probe size (1.5 Angstroem)
-    write(*,*)
-    call surf%setup(nat,at,xyz,.true.)
+!    write(*,*)
+!    call surf%setup(nat,at,xyz,.true.)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme)
+!    write(*,*)
+!   call surf%deallocate()
+!   call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme)
 
 
 
     !> smaller probe
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,probe=1.0_wp)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,probe=1.0_wp)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight, probe=1.0_wp)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight, probe=1.0_wp)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight, probe=1.0_wp)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight, probe=1.0_wp)
 
-    write(*,*)
-    call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=1.0_wp)
+!    write(*,*)
+!    call surf%deallocate()
+!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=1.0_wp)
 
+    !> small test
+    call surf%deallocate()
+    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=0.0_wp)
 
     write(*,*)
     write(*,*) '========================== END ================================='
