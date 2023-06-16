@@ -16,11 +16,11 @@ module tesspoints
         !> number of tesselation points of this atom
     integer :: n
 
-        !> coordinates of tesselation points
-        real(wp), allocatable :: xyz
+        !> surface normals
+        real(wp), allocatable :: xyz(:,:)
 
         !> areas of corresponding tesselation points
-        real(wp), allocatable :: areas
+        real(wp), allocatable :: ap(:)
 
 !        contains
  !       procedure :: fill => fillpt

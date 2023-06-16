@@ -335,7 +335,6 @@ subroutine setup_surface_calculator(self,nat,at,xyz,pr,ngrid,probe)
     call self%info(stdout)
    endif
 
-   allocate(self%tess(nat))
 end subroutine setup_surface_calculator
 
 
@@ -517,6 +516,8 @@ subroutine init_surface_calculator(self, num, vdwRad, probeRad, &
 !   allocate(self%shift(self%nat))
 !   allocate(self%bornMat(self%nat, self%nat))
 
+   allocate(self%tess(self%nat))
+
 end subroutine init_surface_calculator
 
 subroutine deallocate_surface_calculator(self)
@@ -552,6 +553,7 @@ subroutine update(self, num, xyz)
 
    !> Cartesian coordinates
    real(wp), intent(in) :: xyz(:, :)
+   integer :: i
 
    ! initialize the neighbor list
    call update_nnlist_gbsa(self%nat, self%ntpair, self%ppind, xyz, &

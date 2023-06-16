@@ -89,13 +89,13 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    real(wp), intent(out) :: dsdrt(:, :, :)
 
    ! make output
-   type(tesspts), intent(in) :: tess(:)
+   type(tesspts), intent(out) :: tess(:)
 
    real(wp) :: tj(3),tj2
 
    integer :: iat, jat, ip, jj, nnj, nnk, nni, nno
-   real(wp) :: rsas, sasai, xyza(3), xyzp(3), sasap, wr, wsa, drjj(3)
-   real(wp), allocatable :: grds(:, :), grads(:, :)! , tessxyz(:,:), areas(:)
+   real(wp) :: rsas, sasai, xyza(3), xyzp(3), sasap, wr, wsa, drjj(3), length
+   real(wp), allocatable :: grds(:, :), grads(:, :), xyzt(:,:), areas(:)
    integer, allocatable :: grdi(:)
 
    sasa(:) = 0.0_wp
@@ -105,7 +105,8 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    allocate(grads(3,nat), source = 0.0_wp)
    allocate(grds(3,maxval(nnsas)))
    allocate(grdi(maxval(nnsas)))
-
+   allocate(xyzt(3,size(angGrid, 2)))
+   allocate(areas(size(angGrid, 2)))
    !#$omp parallel do default(none) shared(sasa, dsdrt) &
    !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
    !#$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
@@ -141,6 +142,11 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
             wsa = angWeight(ip)*wr*sasap
             ! accumulate the surface area, sum in eq 10
             sasai = sasai + wsa
+            ! save area and ccords of tesspoint
+            areas(ip) = wsa * 4 * pi
+            xyzt(1, ip) = xyzp(1)
+            xyzt(2, ip) = xyzp(2)
+            xyzt(3, ip) = xyzp(3)
             ! accumulate the surface gradient
             do jj = 1, nni
                nnj = grdi(jj)
@@ -153,7 +159,9 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
       ! finalize eq 10
       sasa(iat) = sasai * 4.0_wp * pi
       dsdrt(:,:,iat) = grads
-
+      tess(iat)%n = size(angGrid, 2)
+      tess(iat)%ap = areas
+      tess(iat)%xyz = xyzt
    end do
 
 end subroutine compute_numsa
