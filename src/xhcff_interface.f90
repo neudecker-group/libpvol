@@ -49,12 +49,14 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_singlepoint(nat,at,xyz,dat,energy,gradient,verbose,iostat)
+  subroutine xhcff_singlepoint(nat,at,xyz,dat,proberad, pressure,energy,gradient,verbose,iostat)
     implicit none
     !> INPUT
     integer,intent(in)  :: nat        !> number of atoms
     integer,intent(in)  :: at(nat)    !> atom types
     real(wp),intent(in) :: xyz(3,nat) !> Cartesian coordinates in Bohr
+    real(wp), intent(in) :: proberad !> proberadius for sas calculation
+    real(wp), intent(in) :: pressure !> pressure in au
     logical,intent(in),optional    :: verbose  !> printout activation 
     type(xhcff_data),intent(inout) :: dat  !> collection of xhcff datatypes and settings
     !> OUTPUT
@@ -77,7 +79,7 @@ contains  !> MODULE PROCEDURES START HERE
     io = 0
 
     !> singlpoint + gradient call goes here (best would be another module)
-    !call xhcff_eg(  )
+    call xhcff_eg(nat,at,xyz,proberad, pressure,energy,gradient,verbose,iostat)
 
 
     if (present(iostat)) then

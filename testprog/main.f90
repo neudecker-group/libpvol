@@ -21,6 +21,7 @@ program xhcfflib_main_tester
     use testmol
     use xhcff_interface
     use xhcff_surface_module
+    use xhcff_engrad
     implicit none
     
     integer :: nat
@@ -39,7 +40,6 @@ program xhcfflib_main_tester
    logical :: fail,pr
    integer :: io
    type(xhcff_data) :: dat
-
    type(surface_calculator) :: surf
 
 !========================================================================================!
@@ -130,13 +130,13 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
     write(*,*) '==================== XHCFF SINGLEPOINT ========================='
     write(*,*) '================================================================'
- 
 
 
-
-
-
- 
+    call xhcff_eg(nat,at,xyz,0.0_wp,0.00034_wp, energy, gradient)
+    print *, 'xhcff gradient:'
+    do i=1,nat
+        write (*,'(2x,i3,3x,3f16.6)') , i, gradient(1:3,i)
+    end do
 
     write(*,*)
     write(*,*) '========================== END ================================='

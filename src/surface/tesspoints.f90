@@ -14,7 +14,7 @@ module tesspoints
     !> tesselation points of one atom
     type tesspts
         !> number of tesselation points of this atom
-    integer :: n
+        integer :: n
 
         !> surface normals
         real(wp), allocatable :: xyz(:,:)

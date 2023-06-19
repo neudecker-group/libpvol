@@ -100,7 +100,6 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
 
    sasa(:) = 0.0_wp
    dsdrt(:, :, :) = 0.0_wp
-
    ! allocate space for the gradient storage
    allocate(grads(3,nat), source = 0.0_wp)
    allocate(grds(3,maxval(nnsas)))
@@ -108,7 +107,7 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
    allocate(xyzt(3,size(angGrid, 2)))
    allocate(areas(size(angGrid, 2)))
    !#$omp parallel do default(none) shared(sasa, dsdrt) &
-   !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
+   !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, xyzt, areas, tess) &
    !#$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
    !#$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
    do iat = 1, nat
@@ -120,6 +119,10 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
       grads = 0.0_wp
       sasai = 0.0_wp
 
+      !reset areas and xyzt
+      areas(:) = 0.0_wp
+      xyzt(:,:) = 0.0_wp
+
       ! atomic position
       xyza(:) = xyz(:,iat)
       ! radial atomic weight
@@ -129,6 +132,9 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
       do ip = 1, size(angGrid, 2)
          ! grid point position
          xyzp(:) = xyza(:) + rsas*angGrid(1:3,ip)
+
+         ! save gridpoint position
+         xyzt(1:3, ip) = xyzp
          ! atomic surface function at the grid point
          ! compute the distance to the atom
 
@@ -142,11 +148,9 @@ subroutine compute_numsa(nat, nnsas, nnlists, xyz, vdwsa, &
             wsa = angWeight(ip)*wr*sasap
             ! accumulate the surface area, sum in eq 10
             sasai = sasai + wsa
-            ! save area and ccords of tesspoint
-            areas(ip) = wsa * 4 * pi
-            xyzt(1, ip) = xyzp(1)
-            xyzt(2, ip) = xyzp(2)
-            xyzt(3, ip) = xyzp(3)
+            ! save area tesspoint
+            areas(ip) = wsa * 4.0_wp * pi
+
             ! accumulate the surface gradient
             do jj = 1, nni
                nnj = grdi(jj)
