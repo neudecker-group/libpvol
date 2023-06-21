@@ -1,7 +1,7 @@
 !================================================================================!
 ! This file is part of xhcfflib.
 !
-! Copyright (C) 2023 
+! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht 
 !
 ! xhcfflib is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
@@ -137,6 +137,9 @@ program xhcfflib_main_tester
     do i=1,nat
         write (*,'(2x,i3,3x,3f16.6)') , i, gradient(1:3,i)
     end do
+
+    write(*,*)
+    write(*,*) 'gnorm:',sqrt(sum(gradient**2))
 
     write(*,*)
     write(*,*) '========================== END ================================='

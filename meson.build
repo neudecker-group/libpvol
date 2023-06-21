@@ -48,7 +48,7 @@ xhcfflib_dep = declare_dependency(
 if get_option('build_exe')
 subdir('testprog')
 xhcfflib_exe = executable(
-  meson.project_name(),
+  'xhcff-tester',
   sources: prog,
   dependencies: xhcfflib_dep,
   install: install,
