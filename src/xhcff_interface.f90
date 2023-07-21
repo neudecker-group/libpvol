@@ -33,8 +33,19 @@ module xhcff_interface
 !> data required for a XHCFF calculation
   type :: xhcff_data
 
-    real(wp) :: xhcff_energy
+    !> INPUT
+    integer :: nat        !> number of atoms
+    integer, allocatable :: at(:)   !> atom types
+    real(wp), allocatable :: xyz(:,:) !> Cartesian coordinates in Bohr
+    real(wp) :: pressure_au !> pressure in a.u.
+    real(wp) :: pressure_gpa !> pressure in GPa
+    logical :: print
+    logical :: verbose
 
+    real(wp) :: xhcff_energy
+    real(wp), allocatable :: gradient
+
+!> TODO add vdw rad selection Bondi
 !> TODO variables go here:
     ! gridsize
     ! probe rad
@@ -113,14 +124,18 @@ contains  !> MODULE PROCEDURES START HERE
   end subroutine print_xhcff_results
 !========================================================================================!
 
-!TODO the xhcff_initialize: still needs pressure, gridsize, proberad
-  subroutine xhcff_initialize(nat,at,xyz,dat, &
-  &                 print,verbose,iunit,iostat)
+  !TODO the xhcff_initialize: still needs pressure, gridsize, proberad
+  !TODO set defaults
+  subroutine xhcff_initialize(nat,at,xyz,pressure,dat, &
+  &                 gridsize,proberad,print,verbose,iunit,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
     real(wp),intent(in) :: xyz(3,nat)
+    real(wp),intent(in) :: pressure !> pressure in GPa
+    integer,intent(in),optional :: gridsize
+    real(wp),intent(in),optional :: proberad !> proberadius for sas calculation
     logical,intent(in),optional  :: print
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
@@ -153,11 +168,30 @@ contains  !> MODULE PROCEDURES START HERE
 !> Reset datatypes
     call dat%reset()
 
-!> TODO XHCFF calculator setup goes here
+
     ! allocate surface calculator
     allocate (dat%surf)
-    ! call surface calculator setup
-    !call surf%setup( ... )
+    ! call surface calculator setup with otional parameters
+    if (present(gridsize) .and. (present(proberad))) then
+      call dat%surf%setup(nat,at,xyz,pr, ngrid=gridsize, probe=proberad)
+
+    elseif (present(gridsize)) then
+      call dat%surf%setup(nat,at,xyz,pr, ngrid=gridsize)
+
+    elseif (present(proberad)) then
+      call dat%surf%setup(nat,at,xyz,pr, probe=proberad)
+
+    else
+      call dat%surf%setup(nat,at,xyz,pr)
+    end if
+
+    dat%pressure_gpa = pressure
+    dat%pressure_au = pressure * 3.3989309735473356e-05
+    dat%nat = nat
+    allocate (dat%at(nat))
+    dat%at = at
+    allocate(dat%xyz(3,nat))
+    dat%xyz = xyz
 
     if ((io /= 0).and.pr) then
       write (myunit,'("Could not create force field calculator ",a)') source
@@ -172,9 +206,14 @@ contains  !> MODULE PROCEDURES START HERE
     implicit none
     class(xhcff_data) :: self
     self%xhcff_energy = 0.0_Wp
-    ! TODO reset pressure, probe rad, grid size
+    self%nat = 0
+    self%pressure_au = 0
+    self%pressure_gpa = 0
 
     if (allocated(self%surf)) deallocate (self%surf)
+    if (allocated(self%gradient)) deallocate(self%gradient)
+    if (allocated(self%at)) deallocate(self%at)
+    if (allocated(self%xyz)) deallocate(self%xyz)
   end subroutine xhcff_data_deallocate
 
 !========================================================================================!

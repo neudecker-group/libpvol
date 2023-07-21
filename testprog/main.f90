@@ -138,8 +138,11 @@ program xhcfflib_main_tester
         write (*,'(2x,i3,3x,3f16.6)') , i, gradient(1:3,i)
     end do
 
-    write(*,*)
-    write(*,*) 'gnorm:',sqrt(sum(gradient**2))
+    call xhcff_initialize(nat,at,xyz,10.0_wp,dat)
+    print *, dat%pressure_au, dat%pressure_gpa
+    call dat%deallocate
+    print *, dat%pressure_au, dat%pressure_gpa
+
 
     write(*,*)
     write(*,*) '========================== END ================================='
