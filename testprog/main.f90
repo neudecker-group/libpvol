@@ -34,7 +34,7 @@ program xhcfflib_main_tester
     integer :: i,j,k,l
 
 !========================================================================================!
-
+   real(wp) :: p, probe
    real(wp) :: energy
    real(wp),allocatable :: gradient(:,:)
    real(wp) :: gnorm
@@ -44,6 +44,9 @@ program xhcfflib_main_tester
    type(xhcff_calculator) :: xhcff
    type(surface_calculator) :: surf
 
+    real(wp), allocatable :: graddiff(:,:)
+    !TODO use higher to -> needs better reference
+    real(wp), parameter :: toldiff = 1e-6 !> tolerable difference for gradient units
 !========================================================================================!
     fail = .false.
     pr = .true.
@@ -52,12 +55,14 @@ program xhcfflib_main_tester
     allocate(at(nat),xyz(3,nat))
     at = testat
     xyz = testxyz
+    p = testpressure
+    probe = testproberad
     chrg = 0
 
     energy = 0.0_wp
     gnorm  = 0.0_wp
     allocate(gradient(3,nat),source=0.0_wp)
-
+    allocate(graddiff(3,nat),source=0.0_wp)
     write(*,*) nat
     write(*,*)
     do i=1,nat
@@ -134,16 +139,34 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
 
 
-    call xhcff%init(nat,at,xyz,10.0_wp, proberad=0.0_wp, verbose=.True.)
+    call xhcff%init(nat,at,xyz,testpressure, proberad=testproberad, verbose=.false.)
     call xhcff%singlepoint(energy, gradient)
-
+    call xhcff%info()
 
     write(*,*)
     write(*,*) '========================== END ================================='
     write(*,*) '==================== XHCFF SINGLEPOINT ========================='
     write(*,*) '========================== END ================================='
 
+    !> test difference to reference gradient
+    graddiff = gradient - testgrad
 
+    do i=1, nat
+        do j=1, 3
+            if (abs(graddiff(j,i)) > toldiff) then
+                fail = .true.
+            end if
+        end do
+    end do
+
+    if (fail) then
+        write (*,*) 'UNITTEST FAILED!'
+        write (*,*) 'difference between calculated gradien and reference:'
+
+        do i=1,nat
+            write (*,'(2x,i3,3x,3f16.12)') , i, graddiff(1:3,i)
+        end do
+    end if
 !=======================================================================================!
    deallocate(gradient)
    deallocate(xyz,at)

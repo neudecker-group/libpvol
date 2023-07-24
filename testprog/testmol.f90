@@ -33,9 +33,43 @@ module testmol
       &  8.31511620712388_wp, -9.76854236502758_wp, -1.79108242206824_wp], &
       &  shape(testxyz))
 
+    real(wp), parameter :: testpressure = 10.0_wp !> testpressure in GPa
+
+    real(wp), parameter :: testproberad = 0.0_wp
+
+    real(wp),parameter :: testgrad(3,testnat) =    reshape(&
+        &[ 0.001050_wp, -0.000044_wp,  0.000000_wp, &
+        &  0.000395_wp, -0.000023_wp,  0.000004_wp, &
+        &  0.000465_wp, -0.002016_wp,  0.000000_wp, &
+        & -0.004580_wp, -0.003230_wp,  0.000001_wp, &
+        & -0.001186_wp, -0.000201_wp,  0.000002_wp, &
+        &  0.001115_wp,  0.000278_wp,  0.000005_wp, &
+        &  0.000691_wp,  0.000590_wp,  0.000004_wp, &
+        &  0.005080_wp,  0.001649_wp,  0.000010_wp, &
+        &  0.000024_wp, -0.000088_wp, -0.000001_wp, &
+        & -0.000398_wp,  0.000225_wp,  0.000002_wp, &
+        & -0.003994_wp,  0.003538_wp,  0.000000_wp, &
+        & -0.000122_wp,  0.000002_wp,  0.000006_wp, &
+        & -0.000946_wp, -0.000240_wp,  0.000001_wp, &
+        &  0.000531_wp,  0.001008_wp, -0.000004_wp, &
+        &  0.001423_wp, -0.004222_wp, -0.000003_wp, &
+        &  0.001493_wp,  0.002057_wp, -0.003656_wp, &
+        &  0.001493_wp,  0.002052_wp,  0.003659_wp, &
+        &  0.001475_wp, -0.004194_wp, -0.000002_wp, &
+        & -0.003189_wp,  0.003063_wp,  0.000003_wp, &
+        & -0.000574_wp, -0.002505_wp, -0.003635_wp, &
+        & -0.000571_wp, -0.002510_wp,  0.003632_wp, &
+        &  0.004211_wp,  0.001348_wp, -0.000015_wp, &
+        & -0.001948_wp,  0.001713_wp, -0.003617_wp, &
+        & -0.001940_wp,  0.001753_wp,  0.003602_wp],&
+        &  shape(testgrad))
+
    public :: testnat
    public :: testat
    public :: testxyz
+   public :: testpressure
+   public :: testproberad
+   public :: testgrad
    public :: writetestcoord
 
    
@@ -58,7 +92,6 @@ subroutine writetestcoord
     close(ich)
 
 end subroutine writetestcoord
-
 
 
 
