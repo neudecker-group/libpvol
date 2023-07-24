@@ -193,7 +193,7 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ngrid,probe)
+  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe)
     !> Error source
     character(len=*),parameter :: source = 'setup_surface_calculator'
 
@@ -209,6 +209,8 @@ contains   !> MODULE PROCEDURES START HERE
     !> printout flag
     logical,intent(in) :: pr
 
+    !> Error flag
+    integer, intent(inout) :: ierr
     !> (optional) number of Lebedev grid points
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
@@ -237,9 +239,9 @@ contains   !> MODULE PROCEDURES START HERE
 
     !> call init_surface_calculator.
     !> By default D3 vdW radii are used.
-    call self%init(at,vanDerWaalsRadD3,probeRad,lrcut,srcut,nAng)
+    call self%init(at,vanDerWaalsRadD3,probeRad, ierr, lrcut,srcut,nAng)
 
-    !> call the update rutine to set up neighbourlists and calculate the surface
+    !> call the update routine to set up neighbourlists and calculate the surface
     call self%update(at,xyz)
 
     if (pr) then
@@ -249,7 +251,7 @@ contains   !> MODULE PROCEDURES START HERE
   end subroutine setup_surface_calculator
 
 !> Initialize data straucture
-  subroutine init_surface_calculator(self,num,vdwRad,probeRad, &
+  subroutine init_surface_calculator(self,num,vdwRad,probeRad, ierr, &
          & rCutoff,rOffset,nAng,surfaceTension)
 
     !> Error source
@@ -279,8 +281,9 @@ contains   !> MODULE PROCEDURES START HERE
     !> Number of angular grid points for integration
     integer,intent(in) :: nAng
 
-    integer :: iat,izp,jat,ij,iang,ierr
+    integer :: iat,izp,jat,ij,iang
     real(wp) :: r
+    integer, intent(inout) :: ierr
 
     self%nat = size(num)
     self%at = num
