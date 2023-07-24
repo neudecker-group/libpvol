@@ -31,6 +31,7 @@ module xhcff_interface
 
 !> this type bundles together most of the
 !> data required for a XHCFF calculation
+  !TODO rewrite as class
   type :: xhcff_data
 
     !> INPUT
@@ -39,19 +40,13 @@ module xhcff_interface
     real(wp), allocatable :: xyz(:,:) !> Cartesian coordinates in Bohr
     real(wp) :: pressure_au !> pressure in a.u.
     real(wp) :: pressure_gpa !> pressure in GPa
-    logical :: print
     logical :: verbose
 
-    real(wp) :: xhcff_energy
-    real(wp), allocatable :: gradient
+    real(wp) :: energy
+    real(wp), allocatable :: gradient(:,:)
 
 !> TODO add vdw rad selection Bondi
-!> TODO variables go here:
-    ! gridsize
-    ! probe rad
-    ! vdW rad selection (?)
-    ! input pressure
-    ! allocatable surface calculator
+
     type(surface_calculator),allocatable :: surf
 
   contains
@@ -66,42 +61,28 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_singlepoint(nat,at,xyz,dat,proberad,pressure,energy,gradient,verbose,iostat)
+  subroutine xhcff_singlepoint(dat, energy, gradient, iostat)
     implicit none
-    !> INPUT
-    integer,intent(in)  :: nat        !> number of atoms
-    integer,intent(in)  :: at(nat)    !> atom types
-    real(wp),intent(in) :: xyz(3,nat) !> Cartesian coordinates in Bohr
-    real(wp),intent(in) :: proberad !> proberadius for sas calculation
-    real(wp),intent(in) :: pressure !> pressure in au
-    logical,intent(in),optional    :: verbose  !> printout activation
+
+    !> DATA CONTAINER
     type(xhcff_data),intent(inout) :: dat  !> collection of xhcff datatypes and settings
     !> OUTPUT
     real(wp),intent(out) :: energy
-    real(wp),intent(out) :: gradient(3,nat)
+    real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
-    !> LOCAL
-    integer :: io
-    logical :: pr
 
-    !> printout activation via verbosity
-    if (present(verbose)) then
-      pr = verbose
-    else
-      pr = .false. !> (there is close to no printout anyways)
-    end if
+    ! data elements
+    dat%energy = 0.0_wp
+    dat%gradient(:,:) = 0.0_wp
 
-    energy = 0.0_wp
-    gradient(:,:) = 0.0_wp
-    io = 0
+    !> singlpoint + gradient call
+    call xhcff_eg(dat%nat, dat%at, dat%xyz, dat%pressure_au, dat%surf, dat%energy, dat%gradient)
 
-    !> singlpoint + gradient call goes here (best would be another module)
-    !TODO rewrite to pass only the xhcff_data object
-    call xhcff_eg(nat,at,xyz,proberad,pressure,energy,gradient,verbose,iostat)
+    !TODO add printout of gradient if verbose
+    !> return singlepoint results from data container
+    energy = dat%energy
+    gradient = dat%gradient
 
-    if (present(iostat)) then
-      iostat = io
-    end if
 
   end subroutine xhcff_singlepoint
 !========================================================================================!
@@ -124,8 +105,7 @@ contains  !> MODULE PROCEDURES START HERE
   end subroutine print_xhcff_results
 !========================================================================================!
 
-  !TODO the xhcff_initialize: still needs pressure, gridsize, proberad
-  !TODO set defaults
+  !TODO set defaults and do error handling
   subroutine xhcff_initialize(nat,at,xyz,pressure,dat, &
   &                 gridsize,proberad,print,verbose,iunit,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
@@ -143,48 +123,46 @@ contains  !> MODULE PROCEDURES START HERE
     !> OUTPUT
     type(xhcff_data),intent(inout) :: dat
     !> LOCAL
+    ! TODO this seems like Error handling to me, shall I include that as well
     integer :: ich,io,myunit
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
 
-!> mapping of optional instuctions
+  !> mapping of optional instuctions
     if (present(print)) then
-      pr = print
+      dat%verbose = print
     else
-      pr = .false.
+      dat%verbose = .false.
     end if
-    if (present(verbose)) then
-      pr2 = verbose
-    else
-      pr2 = .false.
-    end if
-    if (pr2) pr = pr2
+
     if (present(iunit)) then
       myunit = iunit
     else
       myunit = stdout
     end if
 
-!> Reset datatypes
+  !> Reset datatypes
     call dat%reset()
 
 
-    ! allocate surface calculator
+    !> surface calculator
     allocate (dat%surf)
+    io = 0
     ! call surface calculator setup with otional parameters
     if (present(gridsize) .and. (present(proberad))) then
-      call dat%surf%setup(nat,at,xyz,pr, ngrid=gridsize, probe=proberad)
+      call dat%surf%setup(nat,at,xyz,pr, io, ngrid=gridsize, probe=proberad)
 
     elseif (present(gridsize)) then
-      call dat%surf%setup(nat,at,xyz,pr, ngrid=gridsize)
+      call dat%surf%setup(nat,at,xyz,pr, io, ngrid=gridsize)
 
     elseif (present(proberad)) then
-      call dat%surf%setup(nat,at,xyz,pr, probe=proberad)
+      call dat%surf%setup(nat,at,xyz,pr, io, probe=proberad)
 
     else
-      call dat%surf%setup(nat,at,xyz,pr)
+      call dat%surf%setup(nat,at,xyz,pr, io)
     end if
 
+    !> save input data
     dat%pressure_gpa = pressure
     dat%pressure_au = pressure * 3.3989309735473356e-05
     dat%nat = nat
@@ -192,6 +170,11 @@ contains  !> MODULE PROCEDURES START HERE
     dat%at = at
     allocate(dat%xyz(3,nat))
     dat%xyz = xyz
+
+    !> init calc storage
+    dat%energy = 0.0_wp
+    allocate(dat%gradient(3, nat))
+    dat%gradient = 0.0_wp
 
     if ((io /= 0).and.pr) then
       write (myunit,'("Could not create force field calculator ",a)') source
@@ -205,7 +188,8 @@ contains  !> MODULE PROCEDURES START HERE
   subroutine xhcff_data_deallocate(self)
     implicit none
     class(xhcff_data) :: self
-    self%xhcff_energy = 0.0_Wp
+
+    self%energy = 0.0_Wp
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
@@ -215,6 +199,8 @@ contains  !> MODULE PROCEDURES START HERE
     if (allocated(self%at)) deallocate(self%at)
     if (allocated(self%xyz)) deallocate(self%xyz)
   end subroutine xhcff_data_deallocate
+
+  ! TODO write update routine
 
 !========================================================================================!
 end module xhcff_interface

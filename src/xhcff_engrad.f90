@@ -35,40 +35,26 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_eg(nat,at,xyz,proberad,pressure,energy,gradient,verbose,iostat)
+  !> pure gradient calculation
+  subroutine xhcff_eg(nat,at,xyz, pressure, surf, energy,gradient)
     implicit none
     !> INPUT
     integer,intent(in)  :: nat        !> number of atoms
     integer,intent(in)  :: at(nat)    !> atom types
     real(wp),intent(in) :: xyz(3,nat) !> Cartesian coordinates in Bohr
-    real(wp),intent(in) :: proberad !> radius of solvent
-    real(wp),intent(in) :: pressure !> external pressure in au
-    !real(wp),intent(in) :: params(:)
-    !real(wp),intent(in) :: surface(:,:)
-    logical,intent(in),optional    :: verbose  !> printout activation 
+    real(wp),intent(in) :: pressure   !> external pressure in au
+    type(surface_calculator) :: surf  !> surface information
+
     !> OUTPUT
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(3,nat)
-    integer,intent(out),optional  :: iostat
 
     !> LOCAL
-    type(surface_calculator) :: surf
     real(wp), allocatable :: fvecs(:,:,:) !> matrix of force vectirs
     real(wp) :: xyzt(3), nvec(3), trcorr(3) !> container for tesselation coords, normalvector and translationalcorrection
-    integer :: io, iat, it !> counters
-    logical :: pr
-    integer  :: ntess        !> number of tesspoints per atom
+    integer :: iat, it !> counters
+    integer  :: ntess  !> number of tesspoints per atom
 
-    !> printout activation via verbosity
-    if(present(verbose))then
-      pr = verbose
-    else
-      pr =.false. !> (there is close to no printout anyways)
-    endif
-
-    !init surface calculation
-    !TODO do at earlier point
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%normal, probe=proberad)
     ntess = surf%tess(1)%n
     allocate(fvecs(3, ntess, nat))
 
@@ -95,15 +81,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     energy = 0.0_wp
 
-    io = 0
     call surf%deallocate()
-    !> singlpoint + gradient call goes here (best would be another module)
-
-
-
-    if (present(iostat)) then
-      iostat = io
-    end if
 
   end subroutine xhcff_eg
 

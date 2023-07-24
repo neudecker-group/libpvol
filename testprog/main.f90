@@ -16,6 +16,8 @@
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
+
+!> TODO make educational unit test
 program xhcfflib_main_tester
     use iso_fortran_env, only: wp=>real64,stdout=>output_unit
     use testmol
@@ -112,7 +114,7 @@ program xhcfflib_main_tester
 
     !> small test
     call surf%deallocate()
-    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=0.0_wp)
+    call surf%setup(nat,at,xyz,.true.,io,ngrid=lebedev%extreme, probe=0.0_wp)
 
     write(*,*)
     write(*,*) '========================== END ================================='
@@ -132,13 +134,14 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
 
 
-    call xhcff_eg(nat,at,xyz,0.0_wp,0.00034_wp, energy, gradient)
+    call xhcff_initialize(nat,at,xyz,10.0_wp,dat, proberad=0.0_wp)
+    call xhcff_singlepoint(dat, energy, gradient)
     print *, 'xhcff gradient:'
     do i=1,nat
         write (*,'(2x,i3,3x,3f16.6)') , i, gradient(1:3,i)
     end do
 
-    call xhcff_initialize(nat,at,xyz,10.0_wp,dat)
+
     print *, dat%pressure_au, dat%pressure_gpa
     call dat%deallocate
     print *, dat%pressure_au, dat%pressure_gpa
