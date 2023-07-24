@@ -41,6 +41,7 @@ module xhcff_interface
     real(wp) :: pressure_au !> pressure in a.u.
     real(wp) :: pressure_gpa !> pressure in GPa
     logical :: verbose
+    integer :: myunit !> filehandling unit
 
     real(wp) :: energy
     real(wp), allocatable :: gradient(:,:)
@@ -53,6 +54,7 @@ module xhcff_interface
     procedure :: deallocate => xhcff_data_deallocate
     procedure :: reset => xhcff_data_deallocate
     procedure :: info => print_xhcff_results
+    procedure :: singlepoint => xhcff_singlepoint
   end type xhcff_data
 
 !========================================================================================!
@@ -65,7 +67,7 @@ contains  !> MODULE PROCEDURES START HERE
     implicit none
 
     !> DATA CONTAINER
-    type(xhcff_data),intent(inout) :: dat  !> collection of xhcff datatypes and settings
+    class(xhcff_data),intent(inout) :: dat  !> collection of xhcff datatypes and settings
     !> OUTPUT
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
@@ -78,7 +80,9 @@ contains  !> MODULE PROCEDURES START HERE
     !> singlpoint + gradient call
     call xhcff_eg(dat%nat, dat%at, dat%xyz, dat%pressure_au, dat%surf, dat%energy, dat%gradient)
 
-    !TODO add printout of gradient if verbose
+    if (dat%verbose) then
+      call print_xhcff_results(dat)
+    end if
     !> return singlepoint results from data container
     energy = dat%energy
     gradient = dat%gradient
@@ -90,24 +94,37 @@ contains  !> MODULE PROCEDURES START HERE
   subroutine print_xhcff_results(dat,iunit)
     class(xhcff_data),intent(in) :: dat
     integer,intent(in),optional :: iunit ! file handle (usually output_unit=6)
-    integer :: myunit
+    integer :: myunit, i
     character(len=*),parameter :: outfmt = '(2x,a,f23.12,1x,a)'
+
     if (present(iunit)) then
       myunit = iunit
     else
-      myunit = stdout
+      myunit = dat%myunit
     end if
-!TODO also add printout for selected pressure, e.g.
-!    write (myunit,outfmt) "Pressure   ",dat%pressure,"GPa   "
+
+    write(myunit,*) '================================================================'
+    write(myunit,*) '====================== XHCFF Results ==========================='
+    write(myunit,*) '================================================================'
+
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",dat%pressure_gpa,"/ GPa   "
+
     if (allocated(dat%surf)) then
       call dat%surf%info(myunit)
     end if
+
+    write (*,*)
+    print *, 'XHCFF Gradient:'
+    do i=1,dat%nat
+      write (*,'(2x,i3,3x,3f16.6)') , i, dat%gradient(1:3,i)
+    end do
+
   end subroutine print_xhcff_results
 !========================================================================================!
 
   !TODO set defaults and do error handling
   subroutine xhcff_initialize(nat,at,xyz,pressure,dat, &
-  &                 gridsize,proberad,print,verbose,iunit,iostat)
+  &                 gridsize,proberad,verbose,iunit,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     !> INPUT
     integer,intent(in) :: nat
@@ -116,7 +133,6 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(in) :: pressure !> pressure in GPa
     integer,intent(in),optional :: gridsize
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation
-    logical,intent(in),optional  :: print
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
     integer,intent(out),optional :: iostat
@@ -129,16 +145,16 @@ contains  !> MODULE PROCEDURES START HERE
     logical :: exitRun
 
   !> mapping of optional instuctions
-    if (present(print)) then
-      dat%verbose = print
+    if (present(verbose)) then
+      dat%verbose = verbose
     else
       dat%verbose = .false.
     end if
 
     if (present(iunit)) then
-      myunit = iunit
+      dat%myunit = iunit
     else
-      myunit = stdout
+      dat%myunit = stdout
     end if
 
   !> Reset datatypes
@@ -150,16 +166,16 @@ contains  !> MODULE PROCEDURES START HERE
     io = 0
     ! call surface calculator setup with otional parameters
     if (present(gridsize) .and. (present(proberad))) then
-      call dat%surf%setup(nat,at,xyz,pr, io, ngrid=gridsize, probe=proberad)
+      call dat%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize, probe=proberad)
 
     elseif (present(gridsize)) then
-      call dat%surf%setup(nat,at,xyz,pr, io, ngrid=gridsize)
+      call dat%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize)
 
     elseif (present(proberad)) then
-      call dat%surf%setup(nat,at,xyz,pr, io, probe=proberad)
+      call dat%surf%setup(nat,at,xyz,.false., io, probe=proberad)
 
     else
-      call dat%surf%setup(nat,at,xyz,pr, io)
+      call dat%surf%setup(nat,at,xyz,.false., io)
     end if
 
     !> save input data
@@ -193,6 +209,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
+    self%myunit = 6
 
     if (allocated(self%surf)) deallocate (self%surf)
     if (allocated(self%gradient)) deallocate(self%gradient)

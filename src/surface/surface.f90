@@ -710,7 +710,7 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
     write (unit,'(2x, a, t40, i14, 1x, a)') &
-      "Grid points",self%nAng,"per atom"
+      "Grid points",self%nAng,"/ per atom"
 
     write (unit,'(2x, a, t40, f14.4, 1x, a)') &
       "Probe radius",self%probeRad_au,"/ Bohr"

@@ -5,12 +5,6 @@ module testmol
    integer,parameter :: testnat = 24
    integer, parameter :: testat(testnat) = [6,7,6,7,6,6,6,8,7,6,8,7,6,6, &
       &                            1,1,1,1,1,1,1,1,1,1]
-!    integer,parameter :: testnat = 2
-!    integer, parameter :: testat(testnat) = [1, 8]
-!   real(wp),parameter :: testxyz(3,testnat) = reshape(&
-!                                & [0.0_wp, 0.0_wp, 0.0_wp, &
-!                                &  0.0_wp, 0.0_wp, 2.0_wp ], &
-!                                &  shape(testxyz))
 
     real(wp),parameter :: testxyz(3,testnat) =    reshape(&
       &[ 2.02799738646442_wp,  0.09231312124713_wp, -0.14310895950963_wp, &

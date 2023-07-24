@@ -36,7 +36,7 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
   !> pure gradient calculation
-  subroutine xhcff_eg(nat,at,xyz, pressure, surf, energy,gradient)
+  subroutine xhcff_eg(nat,at,xyz, pressure, surf, energy, gradient)
     implicit none
     !> INPUT
     integer,intent(in)  :: nat        !> number of atoms
@@ -80,8 +80,6 @@ contains  !> MODULE PROCEDURES START HERE
     end do
 
     energy = 0.0_wp
-
-    call surf%deallocate()
 
   end subroutine xhcff_eg
 

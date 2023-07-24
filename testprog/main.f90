@@ -134,17 +134,8 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
 
 
-    call xhcff_initialize(nat,at,xyz,10.0_wp,dat, proberad=0.0_wp)
+    call xhcff_initialize(nat,at,xyz,10.0_wp,dat, proberad=0.0_wp, verbose=.True.)
     call xhcff_singlepoint(dat, energy, gradient)
-    print *, 'xhcff gradient:'
-    do i=1,nat
-        write (*,'(2x,i3,3x,3f16.6)') , i, gradient(1:3,i)
-    end do
-
-
-    print *, dat%pressure_au, dat%pressure_gpa
-    call dat%deallocate
-    print *, dat%pressure_au, dat%pressure_gpa
 
 
     write(*,*)
