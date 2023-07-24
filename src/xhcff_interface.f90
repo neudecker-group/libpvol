@@ -24,15 +24,13 @@ module xhcff_interface
   private
 
 !> routines/datatypes that can be seen outside the module
-  public :: xhcff_data
-  public :: xhcff_initialize
-  public :: xhcff_singlepoint
-  public :: print_xhcff_results
+  public :: xhcff_calculator
+  !public :: xhcff_initialize
+  !public :: xhcff_singlepoint
+  !public :: print_xhcff_results
 
-!> this type bundles together most of the
-!> data required for a XHCFF calculation
-  !TODO rewrite as class
-  type :: xhcff_data
+!> Main class for interface
+  type :: xhcff_calculator
 
     !> INPUT
     integer :: nat        !> number of atoms
@@ -51,11 +49,12 @@ module xhcff_interface
     type(surface_calculator),allocatable :: surf
 
   contains
+    procedure :: init => xhcff_initialize
     procedure :: deallocate => xhcff_data_deallocate
     procedure :: reset => xhcff_data_deallocate
     procedure :: info => print_xhcff_results
     procedure :: singlepoint => xhcff_singlepoint
-  end type xhcff_data
+  end type xhcff_calculator
 
 !========================================================================================!
 !========================================================================================!
@@ -63,36 +62,36 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_singlepoint(dat, energy, gradient, iostat)
+  subroutine xhcff_singlepoint(self, energy, gradient, iostat)
     implicit none
 
     !> DATA CONTAINER
-    class(xhcff_data),intent(inout) :: dat  !> collection of xhcff datatypes and settings
+    class(xhcff_calculator),intent(inout) :: self
     !> OUTPUT
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
 
     ! data elements
-    dat%energy = 0.0_wp
-    dat%gradient(:,:) = 0.0_wp
+    self%energy = 0.0_wp
+    self%gradient(:,:) = 0.0_wp
 
-    !> singlpoint + gradient call
-    call xhcff_eg(dat%nat, dat%at, dat%xyz, dat%pressure_au, dat%surf, dat%energy, dat%gradient)
+    !> singlpoint + gradient calculation
+    call xhcff_eg(self%nat, self%at, self%xyz, self%pressure_au, self%surf, self%energy, self%gradient)
 
-    if (dat%verbose) then
-      call print_xhcff_results(dat)
+    if (self%verbose) then
+      call print_xhcff_results(self)
     end if
-    !> return singlepoint results from data container
-    energy = dat%energy
-    gradient = dat%gradient
+    !> return singlepoint results
+    energy = self%energy
+    gradient = self%gradient
 
 
   end subroutine xhcff_singlepoint
 !========================================================================================!
 
-  subroutine print_xhcff_results(dat,iunit)
-    class(xhcff_data),intent(in) :: dat
+  subroutine print_xhcff_results(self,iunit)
+    class(xhcff_calculator),intent(in) :: self
     integer,intent(in),optional :: iunit ! file handle (usually output_unit=6)
     integer :: myunit, i
     character(len=*),parameter :: outfmt = '(2x,a,f23.12,1x,a)'
@@ -100,32 +99,32 @@ contains  !> MODULE PROCEDURES START HERE
     if (present(iunit)) then
       myunit = iunit
     else
-      myunit = dat%myunit
+      myunit = self%myunit
     end if
 
     write(myunit,*) '================================================================'
     write(myunit,*) '====================== XHCFF Results ==========================='
     write(myunit,*) '================================================================'
 
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",dat%pressure_gpa,"/ GPa   "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
-    if (allocated(dat%surf)) then
-      call dat%surf%info(myunit)
+    if (allocated(self%surf)) then
+      call self%surf%info(myunit)
     end if
 
     write (*,*)
     print *, 'XHCFF Gradient:'
-    do i=1,dat%nat
-      write (*,'(2x,i3,3x,3f16.6)') , i, dat%gradient(1:3,i)
+    do i=1,self%nat
+      write (*,'(2x,i3,3x,3f16.6)') , i, self%gradient(1:3,i)
     end do
 
   end subroutine print_xhcff_results
 !========================================================================================!
 
-  !TODO set defaults and do error handling
-  subroutine xhcff_initialize(nat,at,xyz,pressure,dat, &
+  subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
   &                 gridsize,proberad,verbose,iunit,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
+    class(xhcff_calculator),intent(inout) :: self
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
@@ -136,61 +135,59 @@ contains  !> MODULE PROCEDURES START HERE
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
     integer,intent(out),optional :: iostat
-    !> OUTPUT
-    type(xhcff_data),intent(inout) :: dat
     !> LOCAL
-    ! TODO this seems like Error handling to me, shall I include that as well
+    ! TODO add inputchecks
     integer :: ich,io,myunit
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
 
   !> mapping of optional instuctions
     if (present(verbose)) then
-      dat%verbose = verbose
+      self%verbose = verbose
     else
-      dat%verbose = .false.
+      self%verbose = .false.
     end if
 
     if (present(iunit)) then
-      dat%myunit = iunit
+      self%myunit = iunit
     else
-      dat%myunit = stdout
+      self%myunit = stdout
     end if
 
   !> Reset datatypes
-    call dat%reset()
+    call self%reset()
 
 
     !> surface calculator
-    allocate (dat%surf)
+    allocate (self%surf)
     io = 0
     ! call surface calculator setup with otional parameters
     if (present(gridsize) .and. (present(proberad))) then
-      call dat%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize, probe=proberad)
+      call self%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize, probe=proberad)
 
     elseif (present(gridsize)) then
-      call dat%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize)
+      call self%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize)
 
     elseif (present(proberad)) then
-      call dat%surf%setup(nat,at,xyz,.false., io, probe=proberad)
+      call self%surf%setup(nat,at,xyz,.false., io, probe=proberad)
 
     else
-      call dat%surf%setup(nat,at,xyz,.false., io)
+      call self%surf%setup(nat,at,xyz,.false., io)
     end if
 
     !> save input data
-    dat%pressure_gpa = pressure
-    dat%pressure_au = pressure * 3.3989309735473356e-05
-    dat%nat = nat
-    allocate (dat%at(nat))
-    dat%at = at
-    allocate(dat%xyz(3,nat))
-    dat%xyz = xyz
+    self%pressure_gpa = pressure
+    self%pressure_au = pressure * 3.3989309735473356e-05
+    self%nat = nat
+    allocate (self%at(nat))
+    self%at = at
+    allocate(self%xyz(3,nat))
+    self%xyz = xyz
 
     !> init calc storage
-    dat%energy = 0.0_wp
-    allocate(dat%gradient(3, nat))
-    dat%gradient = 0.0_wp
+    self%energy = 0.0_wp
+    allocate(self%gradient(3, nat))
+    self%gradient = 0.0_wp
 
     if ((io /= 0).and.pr) then
       write (myunit,'("Could not create force field calculator ",a)') source
@@ -203,7 +200,7 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
   subroutine xhcff_data_deallocate(self)
     implicit none
-    class(xhcff_data) :: self
+    class(xhcff_calculator) :: self
 
     self%energy = 0.0_Wp
     self%nat = 0

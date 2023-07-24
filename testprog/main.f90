@@ -41,7 +41,7 @@ program xhcfflib_main_tester
 
    logical :: fail,pr
    integer :: io
-   type(xhcff_data) :: dat
+   type(xhcff_calculator) :: xhcff
    type(surface_calculator) :: surf
 
 !========================================================================================!
@@ -134,8 +134,8 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
 
 
-    call xhcff_initialize(nat,at,xyz,10.0_wp,dat, proberad=0.0_wp, verbose=.True.)
-    call xhcff_singlepoint(dat, energy, gradient)
+    call xhcff%init(nat,at,xyz,10.0_wp, proberad=0.0_wp, verbose=.True.)
+    call xhcff%singlepoint(energy, gradient)
 
 
     write(*,*)
