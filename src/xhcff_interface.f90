@@ -166,7 +166,6 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in),optional  :: iunit
     integer,intent(out),optional :: iostat
     !> LOCAL
-    ! TODO add inputchecks
     integer :: ich,io,myunit, surferr
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
