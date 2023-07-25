@@ -81,7 +81,8 @@ contains
     if (number > 0.and.number <= size(vanDerWaalsRadD3,dim=1)) then
       rad = vanDerWaalsRadD3(number)
     else
-      rad = -1.0_wp
+      write(*,*) 'Error demanded VDW radius does not exist!'
+      STOP
     end if
 
   end function getVanDerWaalsRadD3Number
