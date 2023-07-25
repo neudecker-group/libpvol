@@ -80,42 +80,6 @@ program xhcfflib_main_tester
     write(*,*) '===================== SASA CALCULATION ========================='
     write(*,*) '================================================================'
 
-
-    !> default probe size (1.5 Angstroem)
-!    write(*,*)
-!    call surf%setup(nat,at,xyz,.true.)
-
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight)
-
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight)
-
-!    write(*,*)
-!   call surf%deallocate()
-!   call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme)
-
-
-
-    !> smaller probe
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,probe=1.0_wp)
-
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%tight, probe=1.0_wp)
-
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%vtight, probe=1.0_wp)
-
-!    write(*,*)
-!    call surf%deallocate()
-!    call surf%setup(nat,at,xyz,.true.,ngrid=lebedev%extreme, probe=1.0_wp)
-
     !> small test
     call surf%deallocate()
     call surf%setup(nat,at,xyz,.true.,io,ngrid=lebedev%extreme, probe=0.0_wp)
@@ -139,7 +103,7 @@ program xhcfflib_main_tester
 
 
     call xhcff%init(nat,at,xyz,testpressure, proberad=testproberad, verbose=.true.)
-    call xhcff%singlepoint(energy, gradient)
+    call xhcff%singlepoint(nat,at,xyz,energy,gradient)
     call xhcff%info()
 
     write(*,*)
@@ -150,13 +114,14 @@ program xhcfflib_main_tester
     !> test difference to reference gradient
     graddiff = gradient - testgrad
 
-    do i=1, nat
-        do j=1, 3
-            if (abs(graddiff(j,i)) > toldiff) then
-                fail = .true.
-            end if
-        end do
-    end do
+    !do i=1, nat
+    !    do j=1, 3
+    !        if (abs(graddiff(j,i)) > toldiff) then
+    !            fail = .true.
+    !        end if
+    !    end do
+    !end do
+    fail = any(abs(graddiff(:,:)) > toldiff)
 
     if (fail) then
         write (*,*) 'UNITTEST FAILED!'

@@ -16,6 +16,13 @@
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
+
+!> The typical usage is:
+!> 1. declare "use xhcff_interface" in your code
+!> 2. Create a xhcff_calculator
+!> 3. Initialize it with the %init procedure (returns the first XHCFF grad)
+!> 4. Obtain the XHCFF grad with teh %singlepoint procedure
+
 module xhcff_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_engrad
@@ -69,18 +76,22 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_singlepoint(self, energy, gradient, iostat)
+  subroutine xhcff_singlepoint(self, nat,at,xyz, energy, gradient, iostat)
     implicit none
 
     !> DATA CONTAINER
     class(xhcff_calculator),intent(inout) :: self
+    !> INPUT
+    integer,intent(in) :: nat
+    integer,intent(in) :: at(nat)
+    real(wp),intent(in) :: xyz(3,nat)
     !> OUTPUT
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
 
     !> Error handling if not initialized
-    if (self%is_initialized .eqv. .false.) then
+    if (.not.self%is_initialized) then
       if(self%io == 0) then
         self%io = 1
       end if
@@ -93,9 +104,24 @@ contains  !> MODULE PROCEDURES START HERE
       return
     end if
 
-    ! data elements
+    !> data elements
     self%energy = 0.0_wp
     self%gradient(:,:) = 0.0_wp
+
+    !> update coordinates
+    if(nat /= self%nat .or. any(at.ne.self%at) )then
+      if(self%io == 0) then
+        self%io = 1
+      end if
+      if(present(iostat)) then
+        iostat = 1
+      end if
+      return
+    endif
+    self%xyz(:,:) = xyz(:,:)
+
+    !> update surface calculator
+    call self%surf%update( at, xyz )
 
     !> singlpoint + gradient calculation
     call xhcff_eg(self%nat, self%at, self%xyz, self%pressure_au, self%surf, self%energy, self%gradient)
@@ -166,11 +192,13 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in),optional  :: iunit
     integer,intent(out),optional :: iostat
     !> LOCAL
-    ! TODO add inputchecks
     integer :: ich,io,myunit, surferr
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
+    real(wp),parameter :: gpatoau = 3.3989309735473356e-05_wp  
+ 
 
+    !> reset
     io = 0
 
     !> check input variables
@@ -198,26 +226,28 @@ contains  !> MODULE PROCEDURES START HERE
       self%myunit = stdout
     end if
 
-  !> Reset datatypes
+    !> Reset datatypes
     call self%reset()
-
 
     !> surface calculator
     allocate (self%surf)
 
     ! call surface calculator setup with otional parameters
-    if (present(gridpts) .and. (present(proberad))) then
-      call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
+    !if (present(gridpts) .and. (present(proberad))) then
+    !  call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
 
-    elseif (present(gridpts)) then
-      call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts)
+    !elseif (present(gridpts)) then
+    !  call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts)
 
-    elseif (present(proberad)) then
-      call self%surf%setup(nat,at,xyz,.false., surferr, probe=proberad)
+    !elseif (present(proberad)) then
+    !  call self%surf%setup(nat,at,xyz,.false., surferr, probe=proberad)
 
-    else
-      call self%surf%setup(nat,at,xyz,.false., surferr)
-    end if
+    !else
+    !  call self%surf%setup(nat,at,xyz,.false., surferr)
+    !end if
+
+    !> the presence of optional arguments gets inherited
+    call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
 
 
     if(surferr /= 0) then
@@ -226,7 +256,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> save input data
     self%pressure_gpa = pressure
-    self%pressure_au = pressure * 3.3989309735473356e-05
+    self%pressure_au = pressure * gpatoau
     self%nat = nat
     allocate (self%at(nat))
     self%at = at
