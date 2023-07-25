@@ -20,6 +20,7 @@ module xhcff_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_engrad
   use xhcff_surface_module
+  use xhcff_surface_lebedev, only: gridSize
   implicit none
   private
 
@@ -80,7 +81,9 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> Error handling if not initialized
     if (self%is_initialized .eqv. .false.) then
-      self%io = 1
+      if(self%io == 0) then
+        self%io = 1
+      end if
       if(present(iostat)) then
         iostat = 1
       end if
@@ -106,6 +109,7 @@ contains  !> MODULE PROCEDURES START HERE
 
 
   end subroutine xhcff_singlepoint
+
 !========================================================================================!
 
   subroutine print_xhcff_results(self,iunit)
@@ -144,10 +148,11 @@ contains  !> MODULE PROCEDURES START HERE
     end do
 
   end subroutine print_xhcff_results
+
 !========================================================================================!
 
   subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
-  &                 gridsize,proberad,verbose,iunit,iostat)
+  &                 gridpts,proberad,verbose,iunit,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     class(xhcff_calculator),intent(inout) :: self
     !> INPUT
@@ -155,18 +160,30 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in) :: at(nat)
     real(wp),intent(in) :: xyz(3,nat)
     real(wp),intent(in) :: pressure !> pressure in GPa
-    integer,intent(in),optional :: gridsize
+    integer,intent(in),optional :: gridpts !> gridpoints per atom to construct lebedev grid
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
     integer,intent(out),optional :: iostat
     !> LOCAL
     ! TODO add inputchecks
-    integer :: ich,io,myunit
+    integer :: ich,io,myunit, surferr
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
 
     io = 0
+
+    !> check input variables
+    if(present(gridpts)) then
+      if(ALL(gridSize/= gridpts)) then
+        io = 2
+      end if
+    end if
+
+    if(present(proberad) .and. (proberad .lt. 0.0_wp)) then
+      io = 3
+    end if
+
 
   !> mapping of optional instuctions
     if (present(verbose)) then
@@ -189,17 +206,22 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (self%surf)
 
     ! call surface calculator setup with otional parameters
-    if (present(gridsize) .and. (present(proberad))) then
-      call self%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize, probe=proberad)
+    if (present(gridpts) .and. (present(proberad))) then
+      call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
 
-    elseif (present(gridsize)) then
-      call self%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize)
+    elseif (present(gridpts)) then
+      call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts)
 
     elseif (present(proberad)) then
-      call self%surf%setup(nat,at,xyz,.false., io, probe=proberad)
+      call self%surf%setup(nat,at,xyz,.false., surferr, probe=proberad)
 
     else
-      call self%surf%setup(nat,at,xyz,.false., io)
+      call self%surf%setup(nat,at,xyz,.false., surferr)
+    end if
+
+
+    if(surferr /= 0) then
+      io = 4
     end if
 
     !> save input data
@@ -217,6 +239,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%gradient = 0.0_wp
 
     if ((io /= 0).and.pr) then
+      call print_error(myunit, io)
       write (myunit,'("Could not create force field calculator ",a)') source
     end if
     if (present(iostat)) then
@@ -250,14 +273,28 @@ contains  !> MODULE PROCEDURES START HERE
     if (allocated(self%xyz)) deallocate(self%xyz)
   end subroutine xhcff_data_deallocate
 
-  ! TODO write update routine
+  !======================================================================================!
 
   subroutine print_error(myunit, errcode)
     integer, intent(in) :: myunit, errcode
+    integer :: i
 
+    write(myunit,*) 'Error in XHCFF module:'
     select case(errcode)
       case(1)
-      write(myunit,*) 'Error: XHCFF module was not initialized before calculation call!'
+      write(myunit,*) 'was not initialized before calculation call!'
+
+      case(2)
+      write(myunit,*) 'Demanded illegal gridsize!'
+      write(myunit,*) 'allowed gridpts per atom:'
+      do i=0,2
+      write(myunit,*) gridSize(i*8+1:(i+1)*8)
+      end do
+      case(3)
+      write(myunit,*) 'Proberadius cannot be negative!'
+
+      case(4)
+      write(myunit,*) 'could not create surface grid!'
     end select
 
   end subroutine

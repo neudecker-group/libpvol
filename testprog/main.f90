@@ -138,7 +138,7 @@ program xhcfflib_main_tester
     write(*,*) '================================================================'
 
 
-    call xhcff%init(nat,at,xyz,testpressure, proberad=testproberad, verbose=.false.)
+    call xhcff%init(nat,at,xyz,testpressure, proberad=testproberad, verbose=.true.)
     call xhcff%singlepoint(energy, gradient)
     call xhcff%info()
 
