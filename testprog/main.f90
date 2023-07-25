@@ -17,7 +17,6 @@
 ! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
-!> TODO make educational unit test
 program xhcfflib_main_tester
     use iso_fortran_env, only: wp=>real64,stdout=>output_unit
     use testmol
@@ -164,8 +163,10 @@ program xhcfflib_main_tester
         write (*,*) 'difference between calculated gradien and reference:'
 
         do i=1,nat
-            write (*,'(2x,i3,3x,3f16.12)') , i, graddiff(1:3,i)
+            write (*,'(2x,i3,3x,3f16.12)') i, graddiff(1:3,i)
         end do
+        else
+        write (*,*) 'Test passed!'
     end if
 !=======================================================================================!
    deallocate(gradient)

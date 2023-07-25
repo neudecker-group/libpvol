@@ -25,24 +25,30 @@ module xhcff_interface
 
 !> routines/datatypes that can be seen outside the module
   public :: xhcff_calculator
-  !public :: xhcff_initialize
-  !public :: xhcff_singlepoint
-  !public :: print_xhcff_results
 
 !> Main class for interface
   type :: xhcff_calculator
 
-    !> INPUT
+    !> jobdata
     integer :: nat        !> number of atoms
     integer, allocatable :: at(:)   !> atom types
     real(wp), allocatable :: xyz(:,:) !> Cartesian coordinates in Bohr
     real(wp) :: pressure_au !> pressure in a.u.
     real(wp) :: pressure_gpa !> pressure in GPa
+
+    ! IO stuff
     logical :: verbose
     integer :: myunit !> filehandling unit
 
+    !> Output
     real(wp) :: energy
     real(wp), allocatable :: gradient(:,:)
+
+    !> controle variables
+    logical :: is_initialized = .false.
+
+    !> Errorcode
+    integer :: io = 1
 
 !> TODO add vdw rad selection Bondi
 
@@ -71,6 +77,18 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
+
+    !> Error handling if not initialized
+    if (self%is_initialized .eqv. .false.) then
+      self%io = 1
+      if(present(iostat)) then
+        iostat = 1
+      end if
+      if(self%verbose) then
+        call print_error(self%myunit, self%io)
+      end if
+      return
+    end if
 
     ! data elements
     self%energy = 0.0_wp
@@ -106,8 +124,15 @@ contains  !> MODULE PROCEDURES START HERE
     write(myunit,*) '====================== XHCFF Results ==========================='
     write(myunit,*) '================================================================'
 
+    !> print Errormessage if Error was detected and quit
+    if(self%io /= 0) then
+      call print_error(self%myunit, self%io)
+      return
+    end if
+
     write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
+    !> surface printout
     if (allocated(self%surf)) then
       call self%surf%info(myunit)
     end if
@@ -141,6 +166,8 @@ contains  !> MODULE PROCEDURES START HERE
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
 
+    io = 0
+
   !> mapping of optional instuctions
     if (present(verbose)) then
       self%verbose = verbose
@@ -160,7 +187,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> surface calculator
     allocate (self%surf)
-    io = 0
+
     ! call surface calculator setup with otional parameters
     if (present(gridsize) .and. (present(proberad))) then
       call self%surf%setup(nat,at,xyz,.false., io, ngrid=gridsize, probe=proberad)
@@ -195,6 +222,14 @@ contains  !> MODULE PROCEDURES START HERE
     if (present(iostat)) then
       iostat = io
     end if
+
+    if (io == 0) then
+      self%is_initialized = .True.
+    end if
+
+    self%io = io
+
+
   end subroutine xhcff_initialize
 
 !========================================================================================!
@@ -207,6 +242,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%pressure_au = 0
     self%pressure_gpa = 0
     self%myunit = 6
+    self%is_initialized = .false.
 
     if (allocated(self%surf)) deallocate (self%surf)
     if (allocated(self%gradient)) deallocate(self%gradient)
@@ -215,6 +251,16 @@ contains  !> MODULE PROCEDURES START HERE
   end subroutine xhcff_data_deallocate
 
   ! TODO write update routine
+
+  subroutine print_error(myunit, errcode)
+    integer, intent(in) :: myunit, errcode
+
+    select case(errcode)
+      case(1)
+      write(myunit,*) 'Error: XHCFF module was not initialized before calculation call!'
+    end select
+
+  end subroutine
 
 !========================================================================================!
 end module xhcff_interface
