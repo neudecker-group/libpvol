@@ -44,6 +44,7 @@ module xhcff_interface
     real(wp) :: pressure_au !> pressure in a.u.
     real(wp) :: pressure_gpa !> pressure in GPa
 
+
     ! IO stuff
     logical :: verbose
     integer :: myunit !> filehandling unit
@@ -54,6 +55,7 @@ module xhcff_interface
 
     !> controle variables
     logical :: is_initialized = .false.
+    logical :: Bondi !> use Bond radii instead of D3
 
     !> Errorcode
     integer :: io = 1
@@ -90,6 +92,10 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
 
+    !> reset output data elements
+    self%energy = 0.0_wp
+    self%gradient(:,:) = 0.0_wp
+
     !> Error handling if not initialized
     if (.not.self%is_initialized) then
       if(self%io == 0) then
@@ -98,15 +104,7 @@ contains  !> MODULE PROCEDURES START HERE
       if(present(iostat)) then
         iostat = 1
       end if
-      if(self%verbose) then
-        call print_error(self%myunit, self%io)
-      end if
-      return
     end if
-
-    !> data elements
-    self%energy = 0.0_wp
-    self%gradient(:,:) = 0.0_wp
 
     !> update coordinates
     if(nat /= self%nat .or. any(at.ne.self%at) )then
@@ -118,6 +116,14 @@ contains  !> MODULE PROCEDURES START HERE
       end if
       return
     endif
+
+    if(self%io /= 0) then
+      if(self%verbose) then
+        call print_error(self%myunit, self%io)
+      end if
+      return
+    end if
+
     self%xyz(:,:) = xyz(:,:)
 
     !> update surface calculator
@@ -129,10 +135,10 @@ contains  !> MODULE PROCEDURES START HERE
     if (self%verbose) then
       call print_xhcff_results(self)
     end if
+
     !> return singlepoint results
     energy = self%energy
     gradient = self%gradient
-
 
   end subroutine xhcff_singlepoint
 
@@ -178,7 +184,7 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
   subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
-  &                 gridpts,proberad,verbose,iunit,iostat)
+  &                 gridpts,proberad,verbose,iunit,vdwSet, iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     class(xhcff_calculator),intent(inout) :: self
     !> INPUT
@@ -190,15 +196,20 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
+    integer, intent(in), optional :: vdwSet !> Set of vdwRad to use: 0 -> D3, 1 -> Bondi
     integer,intent(out),optional :: iostat
     !> LOCAL
     integer :: ich,io,myunit, surferr
     logical :: ex,okbas,pr,pr2
     logical :: exitRun
-    real(wp),parameter :: gpatoau = 3.3989309735473356e-05_wp  
- 
+    real(wp),parameter :: gpatoau = 3.3989309735473356e-05_wp
 
-    !> reset
+
+
+    !> Reset datatypes
+    call self%reset()
+
+
     io = 0
 
     !> check input variables
@@ -212,6 +223,14 @@ contains  !> MODULE PROCEDURES START HERE
       io = 3
     end if
 
+    if(present(vdwSet) .and. (vdwSet == 1)) then
+      if(ANY(at > 18)) then
+        io = 5
+      end if
+      else if( present(vdwSet) .and. (vdwSet /= 0)) then
+            io = 6
+    end if
+    write(*,*) 'calling surface calculator'
 
   !> mapping of optional instuctions
     if (present(verbose)) then
@@ -226,28 +245,16 @@ contains  !> MODULE PROCEDURES START HERE
       self%myunit = stdout
     end if
 
-    !> Reset datatypes
-    call self%reset()
+    if(present(vdwSet) .and. (vdwSet == 1)) then
+        self%bondi = .true.
+    else
+      self%bondi = .false.
+    end if
+
 
     !> surface calculator
     allocate (self%surf)
-
-    ! call surface calculator setup with otional parameters
-    !if (present(gridpts) .and. (present(proberad))) then
-    !  call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
-
-    !elseif (present(gridpts)) then
-    !  call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts)
-
-    !elseif (present(proberad)) then
-    !  call self%surf%setup(nat,at,xyz,.false., surferr, probe=proberad)
-
-    !else
-    !  call self%surf%setup(nat,at,xyz,.false., surferr)
-    !end if
-
-    !> the presence of optional arguments gets inherited
-    call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad)
+    call self%surf%setup(nat,at,xyz,.false., surferr, ngrid=gridpts, probe=proberad, bondi=self%bondi)
 
 
     if(surferr /= 0) then
@@ -256,7 +263,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> save input data
     self%pressure_gpa = pressure
-    self%pressure_au = pressure * gpatoau
+    self%pressure_au = pressure * 3.3989309735473356e-05
     self%nat = nat
     allocate (self%at(nat))
     self%at = at
@@ -294,8 +301,10 @@ contains  !> MODULE PROCEDURES START HERE
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
+    self%io = 1
     self%myunit = 6
     self%is_initialized = .false.
+    self%bondi = .false.
 
     if (allocated(self%surf)) deallocate (self%surf)
     if (allocated(self%gradient)) deallocate(self%gradient)
@@ -325,6 +334,15 @@ contains  !> MODULE PROCEDURES START HERE
 
       case(4)
       write(myunit,*) 'could not create surface grid!'
+
+      case(5)
+      write(myunit,*) 'Bondi VDW radii only impemented for H-Ar, use D3 radii instead!'
+
+      case(6)
+      write(myunit,*) 'Demanded set of radii not implemented!'
+
+      case(7)
+      write(myunit,*) 'Passed geometry does not match previous one!'
     end select
 
   end subroutine

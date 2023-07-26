@@ -36,6 +36,7 @@ program xhcfflib_main_tester
    real(wp) :: p, probe
    real(wp) :: energy
    real(wp),allocatable :: gradient(:,:)
+    real(wp),allocatable :: gradDiff(:,:)
    real(wp) :: gnorm
 
    logical :: fail,pr
@@ -43,9 +44,9 @@ program xhcfflib_main_tester
    type(xhcff_calculator) :: xhcff
    type(surface_calculator) :: surf
 
-    real(wp), allocatable :: graddiff(:,:)
-    !TODO use higher to -> needs better reference
-    real(wp), parameter :: toldiff = 1e-6 !> tolerable difference for gradient units
+
+    real(wp), parameter :: tolDiffD3 = 1e-6 !> tolerable difference for gradient units
+    real(wp), parameter :: tolDiffBondi = 2e-4 !> tolerable difference for gradient units
 !========================================================================================!
     fail = .false.
     pr = .true.
@@ -101,38 +102,56 @@ program xhcfflib_main_tester
     write(*,*) '==================== XHCFF SINGLEPOINT ========================='
     write(*,*) '================================================================'
 
-
+    !> Xhcff with D3 radii
     call xhcff%init(nat,at,xyz,testpressure, proberad=testproberad, verbose=.true.)
-    call xhcff%singlepoint(nat,at,xyz,energy,gradient)
+    call xhcff%singlepoint(nat,at,xyz, energy, gradient)
     call xhcff%info()
+
+    !> test difference to reference gradient
+    gradDiff = gradient - testGradD3
+     fail = ANY(abs(graddiff(:,:)) > tolDiffD3)
+
+    if (fail) then
+        write (*,*) 'UNITTEST FAILED for D3 radii!'
+        write (*,*) 'difference between calculated gradient and reference:'
+
+        do i=1,nat
+            write (*,'(2x,i3,3x,3f16.12)') i, graddiff(1:3,i)
+        end do
+    else
+        write (*,*) 'Test passed!'
+    end if
+
+    !> Xhcff with Bondi radii
+    call xhcff%reset
+    call xhcff%init(nat,at,xyz,testpressure, gridpts = 5294, proberad=testproberad, vdwSet=1, verbose=.true.)
+    call xhcff%singlepoint(nat,at,xyz, energy, gradient)
+    call xhcff%info()
+
+    !> test difference to reference gradient
+    !> gradients are mirrored
+    gradDiff = gradient + testGradBondi
+    fail = any(abs(graddiff(:,:)) > tolDiffBondi)
+
+
+    if (fail) then
+        write (*,*) 'UNITTEST FAILED for Bondi radii!'
+        write (*,*) 'difference between calculated gradient and reference:'
+
+        do i=1,nat
+            write (*,'(2x,i3,3x,3f16.12)') i, graddiff(1:3,i)
+        end do
+    else
+        write (*,*) 'Test passed!'
+    end if
 
     write(*,*)
     write(*,*) '========================== END ================================='
     write(*,*) '==================== XHCFF SINGLEPOINT ========================='
     write(*,*) '========================== END ================================='
 
-    !> test difference to reference gradient
-    graddiff = gradient - testgrad
 
-    !do i=1, nat
-    !    do j=1, 3
-    !        if (abs(graddiff(j,i)) > toldiff) then
-    !            fail = .true.
-    !        end if
-    !    end do
-    !end do
-    fail = any(abs(graddiff(:,:)) > toldiff)
 
-    if (fail) then
-        write (*,*) 'UNITTEST FAILED!'
-        write (*,*) 'difference between calculated gradien and reference:'
-
-        do i=1,nat
-            write (*,'(2x,i3,3x,3f16.12)') i, graddiff(1:3,i)
-        end do
-        else
-        write (*,*) 'Test passed!'
-    end if
 !=======================================================================================!
    deallocate(gradient)
    deallocate(xyz,at)

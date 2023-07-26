@@ -29,7 +29,7 @@ module xhcff_surface_module
   use xhcff_surface_lebedev,only:gridSize,getAngGrid
   use xhcff_surface_sasa,only:compute_numsa
 
-  use xhcff_surface_vdwradd3,only:vanDerWaalsRadD3
+  use xhcff_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
 
   use tesspoints,only:tesspts
   implicit none
@@ -193,7 +193,7 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe)
+  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe, Bondi)
     !> Error source
     character(len=*),parameter :: source = 'setup_surface_calculator'
 
@@ -215,10 +215,14 @@ contains   !> MODULE PROCEDURES START HERE
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
     real(wp),intent(in),optional :: probe
+    !> (optional) use Bondi VDW radii instead od D3
+    logical, intent(in), optional :: Bondi
+
 
     !> LOCAL
     real(wp) :: probeRad
     integer :: nAng
+    real(wp), allocatable :: vdwRad(:)
 
     !> default setting for grid size
     if (present(ngrid)) then
@@ -237,9 +241,16 @@ contains   !> MODULE PROCEDURES START HERE
     self%probeRad_au = probeRad
     self%probeRad_aa = probeRad*autoaa
 
+    if (present(Bondi) .and. (Bondi .eqv. .true.)) then
+      vdwRad = vanDerWaalsRadBondi
+      else
+      vdwRad = vanDerWaalsRadD3
+    end if
+
+
     !> call init_surface_calculator.
     !> By default D3 vdW radii are used.
-    call self%init(at,vanDerWaalsRadD3,probeRad, ierr, lrcut,srcut,nAng)
+    call self%init(at,vdwRad,probeRad, ierr, lrcut,srcut,nAng)
 
     !> call the update routine to set up neighbourlists and calculate the surface
     call self%update(at,xyz)
