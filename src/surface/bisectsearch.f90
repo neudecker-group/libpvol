@@ -34,7 +34,11 @@ module xhcff_surface_search
     module procedure :: bisectSearchInteger
   end interface bisectSearch
 
-contains
+!========================================================================================!
+!========================================================================================!
+contains !> MODULE PROCEDURES START HERE
+!========================================================================================!
+!========================================================================================!
 
 !> Integer case for bisection search
   pure subroutine bisectSearchInteger(j,xx,x)
@@ -81,6 +85,7 @@ contains
 
   end subroutine bisectSearchInteger
 
+!========================================================================================!
 !> Real case for bisection search
   pure subroutine bisectSearchReal(j,xx,x,tol)
 
@@ -138,4 +143,6 @@ contains
 
   end subroutine bisectSearchReal
 
+!========================================================================================!
+!========================================================================================!
 end module xhcff_surface_search

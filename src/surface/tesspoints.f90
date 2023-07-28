@@ -40,27 +40,33 @@ module tesspoints
 
   end type tesspts
 
-contains
+!=========================================================================================!
+!=========================================================================================!
+contains  !> MODULE PROCEDURES START HERE
+!=========================================================================================!
+!=========================================================================================!
 
   subroutine allocate_tsspt(self,n)
     implicit none
     class(tesspts) :: self
     integer,intent(in) :: n
     integer :: nref
-    if(allocated(self%xyz).and.allocated(self%ap).and. n == self%n)then
-    !> Don't re-allocate if tesspts is already set up.
-    !> There can be quite a lot of tessalation points so this allocation
-    !> could create some overhead when updating the surface frequently
-       return
+    if (allocated(self%xyz).and.allocated(self%ap).and.n == self%n) then
+      !> Don't re-allocate if tesspts is already set up.
+      !> There can be quite a lot of tessalation points so this allocation
+      !> could create some overhead when updating the surface frequently
+      return
 
     else !> fallback if n changed somehow
-     if(allocated(self%xyz)) deallocate(self%xyz)
-     if(allocated(self%ap)) deallocate(self%ap)
-    endif
+      if (allocated(self%xyz)) deallocate (self%xyz)
+      if (allocated(self%ap)) deallocate (self%ap)
+    end if
 
     self%n = n
     allocate (self%xyz(3,n),source=0.0_wp)
     allocate (self%ap(n),source=0.0_wp)
   end subroutine allocate_tsspt
 
+!=========================================================================================!
+!=========================================================================================!
 end module tesspoints

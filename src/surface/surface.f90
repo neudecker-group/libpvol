@@ -193,7 +193,7 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe, Bondi)
+  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe,Bondi)
     !> Error source
     character(len=*),parameter :: source = 'setup_surface_calculator'
 
@@ -210,19 +210,18 @@ contains   !> MODULE PROCEDURES START HERE
     logical,intent(in) :: pr
 
     !> Error flag
-    integer, intent(inout) :: ierr
+    integer,intent(inout) :: ierr
     !> (optional) number of Lebedev grid points
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
     real(wp),intent(in),optional :: probe
-    !> (optional) use Bondi VDW radii instead od D3
-    logical, intent(in), optional :: Bondi
-
+    !> (optional) use Bondi vdW radii instead of D3
+    logical,intent(in),optional :: Bondi
 
     !> LOCAL
     real(wp) :: probeRad
     integer :: nAng
-    real(wp), allocatable :: vdwRad(:)
+    real(wp),allocatable :: vdwRad(:)
 
     !> default setting for grid size
     if (present(ngrid)) then
@@ -241,16 +240,15 @@ contains   !> MODULE PROCEDURES START HERE
     self%probeRad_au = probeRad
     self%probeRad_aa = probeRad*autoaa
 
-    if (present(Bondi) .and. (Bondi .eqv. .true.)) then
-      vdwRad = vanDerWaalsRadBondi
-      else
-      vdwRad = vanDerWaalsRadD3
+    vdwRad = vanDerWaalsRadD3
+    if (present(Bondi)) then
+      if (Bondi) then !> Use Bondi vdW rad instead of D3?
+        vdwRad = vanDerWaalsRadBondi
+      end if
     end if
 
-
     !> call init_surface_calculator.
-    !> By default D3 vdW radii are used.
-    call self%init(at,vdwRad,probeRad, ierr, lrcut,srcut,nAng)
+    call self%init(at,vdwRad,probeRad,ierr,lrcut,srcut,nAng)
 
     !> call the update routine to set up neighbourlists and calculate the surface
     call self%update(at,xyz)
@@ -261,8 +259,9 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine setup_surface_calculator
 
+!=========================================================================================!
 !> Initialize data straucture
-  subroutine init_surface_calculator(self,num,vdwRad,probeRad, ierr, &
+  subroutine init_surface_calculator(self,num,vdwRad,probeRad,ierr, &
          & rCutoff,rOffset,nAng,surfaceTension)
 
     !> Error source
@@ -294,7 +293,7 @@ contains   !> MODULE PROCEDURES START HERE
 
     integer :: iat,izp,jat,ij,iang
     real(wp) :: r
-    integer, intent(inout) :: ierr
+    integer,intent(inout) :: ierr
 
     self%nat = size(num)
     self%at = num
@@ -359,6 +358,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine init_surface_calculator
 
+!=========================================================================================!
   subroutine deallocate_surface_calculator(self)
     !> Instance of the surface calculator
     class(surface_calculator),intent(inout) :: self
@@ -382,6 +382,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine deallocate_surface_calculator
 
+!=========================================================================================!
   subroutine update(self,num,xyz)
     !> Instance of the surface calculator
     class(surface_calculator),intent(inout) :: self
@@ -411,6 +412,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine update
 
+!=========================================================================================!
   subroutine getADet(nAtom,xyz,rad,aDet)
 
     !> Number of atoms
@@ -455,6 +457,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine getADet
 
+!=========================================================================================!
   subroutine addADetDeriv(nAtom,xyz,rad,kEps,qvec,gradient)
 
     !> Number of atoms
@@ -524,6 +527,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine addADetDeriv
 
+!=========================================================================================!
 !> setup a pairlist and compute pair distances of all neighbors
 !  within thresholds lrcut and srcut.
   subroutine update_nnlist_gbsa(nat,ntpair,ppind,xyz,lrcut,srcut, &
@@ -551,6 +555,8 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
   end subroutine update_nnlist_gbsa
+
+!=========================================================================================!
 !> setup a pairlist and compute pair distances of all neighbors
 !  within thresholds lrcut and srcut.
 !  OMP parallel version.
@@ -649,6 +655,8 @@ contains   !> MODULE PROCEDURES START HERE
     deallocate (nntmp,nnls)
 
   end subroutine update_nnlist_gbsa_parallel
+
+!=========================================================================================!
 !> setup a pairlist and compute pair distances of all neighbors
 !  within thresholds lrcut and srcut
 !  Sequential version.
@@ -708,6 +716,7 @@ contains   !> MODULE PROCEDURES START HERE
 
   end subroutine update_nnlist_gbsa_sequential
 
+!=========================================================================================!
   subroutine info(self,unit)
     !> Data structure
     class(surface_calculator),intent(in) :: self
@@ -736,4 +745,6 @@ contains   !> MODULE PROCEDURES START HERE
     write (unit,*)
   end subroutine info
 
+!=========================================================================================!
+!=========================================================================================!
 end module xhcff_surface_module
