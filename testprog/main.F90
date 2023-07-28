@@ -23,6 +23,7 @@ program xhcfflib_main_tester
   use xhcff_interface
   use xhcff_surface_module
   use xhcff_engrad
+  use xhcff_type_timer
   implicit none
 
   integer :: nat
@@ -31,7 +32,7 @@ program xhcfflib_main_tester
   integer :: chrg
   integer :: uhf
   integer :: i,j,k,l
-
+  character(len=40) :: atmp
 !========================================================================================!
   real(wp) :: p,probe
   real(wp) :: energy
@@ -44,8 +45,13 @@ program xhcfflib_main_tester
   type(xhcff_calculator) :: xhcff
   type(surface_calculator) :: surf
 
+  integer :: ntimes
+  type(xhcff_timer) :: timer
+
   real(wp),parameter :: tolDiffD3 = 1e-6 !> tolerable difference for gradient units
   real(wp),parameter :: tolDiffBondi = 2e-4 !> tolerable difference for gradient units
+
+  integer :: threads
 !========================================================================================!
   fail = .false.
   pr = .true.
@@ -70,15 +76,20 @@ program xhcfflib_main_tester
   call writetestcoord()
 
 !=======================================================================================!
+!> parse optional command line args and their defaults
+  threads = 0
+  call ParseCommandLineArgs(threads)
+
+!=======================================================================================!
 !=======================================================================================!
 !> STANDARD USAGE
 !=======================================================================================!
 !=======================================================================================!
 
   write (*,*)
-  write (*,*) '================================================================'
+  write (*,*) '==========================BEGIN================================='
   write (*,*) '===================== SASA CALCULATION ========================='
-  write (*,*) '================================================================'
+  write (*,*) '==========================BEGIN================================='
 
   !> small test
   call surf%deallocate()
@@ -96,9 +107,10 @@ program xhcfflib_main_tester
 !=======================================================================================!
 
   write (*,*)
-  write (*,*) '================================================================'
+  write (*,*) '==========================BEGIN================================='
   write (*,*) '==================== XHCFF SINGLEPOINT ========================='
-  write (*,*) '================================================================'
+  write (*,*) '==========================BEGIN================================='
+  write (*,*)
 
   !> Xhcff with D3 radii
   call xhcff%init(nat,at,xyz,testpressure,proberad=testproberad,verbose=.false.)
@@ -147,9 +159,93 @@ program xhcfflib_main_tester
   write (*,*) '========================== END ================================='
   write (*,*) '==================== XHCFF SINGLEPOINT ========================='
   write (*,*) '========================== END ================================='
+!=======================================================================================!
 
+  if (threads > 0) then
+    write (*,*)
+    write (*,*) '==========================BEGIN================================='
+    write (*,*) '==================== XHCFF OpenMP TEST ========================='
+    write (*,*) '==========================BEGIN================================='
+
+    ntimes = threads
+    call timer%new(ntimes,.true.)
+    do i = 1,ntimes
+      call OMP_Set_Num_Threads(i)
+#ifdef WITH_MKL
+      call MKL_Set_Num_Threads(i)
+#endif
+      call ompprint_intern(atmp)
+
+      call timer%measure(i,atmp)
+      call xhcff%reset
+      call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
+     &    proberad=testproberad,vdwSet=1,verbose=.false.)
+      do j = 1,250 !> a few repetitions to actually see some CPU time...
+        call xhcff%singlepoint(nat,at,xyz,energy,gradient)
+      end do
+      call timer%measure(i)
+      write (*,*)
+      call timer%write_timing(stdout,i)
+    end do
+
+    write (*,*)
+    write (*,*) '========================== END ================================='
+    write (*,*) '==================== XHCFF OpenMP TEST ========================='
+    write (*,*) '========================== END ================================='
+  end if
 !=======================================================================================!
   deallocate (gradient)
   deallocate (xyz,at)
 !=======================================================================================!
 end program xhcfflib_main_tester
+
+!=======================================================================================!
+subroutine ompprint_intern(str)
+!$ use omp_lib
+  implicit none
+  integer :: nproc,TID
+  character(len=*) :: str
+!$OMP PARALLEL PRIVATE(TID)
+  TID = OMP_GET_THREAD_NUM()
+  IF (TID .EQ. 0) THEN
+    nproc = OMP_GET_NUM_THREADS()
+#ifdef WITH_MKL
+    write (str,'(a,i3)') 'OMP/MKL threads = ',nproc
+#else
+    write (str,'(a,i3)') 'OMP threads = ',nproc
+#endif
+  END IF
+!$OMP END PARALLEL
+end subroutine ompprint_intern
+
+!=======================================================================================!
+subroutine ParseCommandLineArgs(threads)
+  implicit none
+  character(len=256) :: arg,arg2 ! Buffer to hold each argument
+  integer :: numArgs,i     ! Variables to store argument count and loop index
+  integer :: io,dumi
+  !> IN/OUTPUTS
+  integer,intent(inout) :: threads
+
+  ! Get the number of command-line arguments
+  numArgs = COMMAND_ARGUMENT_COUNT()
+
+  ! Check if there are any arguments passed
+  if (numArgs == 0) then
+    return
+  end if
+
+  ! Loop through the command-line arguments
+  do i = 1,numArgs
+    ! Fetch each argument and store it in 'arg'
+    call GET_COMMAND_ARGUMENT(i,arg)
+
+    select case (trim(arg))
+    case ('-T')
+      call GET_COMMAND_ARGUMENT(i+1,arg2)
+      read (arg2,*,iostat=io) dumi
+      if (io == 0) threads = dumi
+    end select
+  end do
+
+end subroutine ParseCommandLineArgs

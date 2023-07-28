@@ -49,29 +49,38 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: gradient(3,nat)
 
     !> LOCAL
-    real(wp),allocatable :: fvecs(:,:,:) !> matrix of force vectirs
+    real(wp),allocatable :: fvecs(:,:,:)  !> matrix of force vectors
     real(wp) :: xyzt(3),nvec(3),trcorr(3) !> container for tesselation coords, normalvector and translationalcorrection
     integer :: iat,it !> counters
     integer  :: ntess  !> number of tesspoints per atom
 
     ntess = surf%tess(1)%n
-    allocate (fvecs(3,ntess,nat))
+    !allocate (fvecs(3,ntess,nat))
+    gradient(:,:) = 0.0_wp
 
-    !evaluate eq. 3
+    !> Evaluate gradient via eq. 3 and eq. 4
+    !$omp parallel do default(none) &
+    !$omp shared(surf, nat, ntess, pressure, xyz, gradient) &
+    !$omp private(iat, it, xyzt, nvec )
     do iat = 1,nat
       do it = 1,ntess
-        ! calc force vectors, eq 3
+        !> calc force vectors, eq 3
         xyzt = surf%tess(iat)%xyz(:,it)
         nvec = xyz(:,iat)-xyzt
         nvec = nvec/sqrt(nvec(1)**2+nvec(2)**2+nvec(3)**2)
-        fvecs(:,it,iat) = nvec*surf%tess(iat)%ap(it)*pressure
+
+        !> add tess point contribution to gradient
+        gradient(:,iat) = gradient(:,iat) + nvec*surf%tess(iat)%ap(it)*pressure
+        !fvecs(:,it,iat) = nvec*surf%tess(iat)%ap(it)*pressure
+
       end do
     end do
+    !$omp end parallel do
 
-    !calc gradient, eq. 4
-    gradient = sum(fvecs,dim=2)
+    !> calc gradient, eq. 4
+    !gradient = sum(fvecs,dim=2)
 
-    ! correct for translations and rotations
+    !> correct for translations and rotations
     trcorr(1:3) = sum(gradient,dim=2)/nat
     do iat = 1,nat
       gradient(1:3,iat) = gradient(1:3,iat)-trcorr(1:3)

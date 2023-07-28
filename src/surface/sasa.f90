@@ -57,6 +57,7 @@ contains  !> MODULE PROCEDURES START HERE
 
   subroutine compute_numsa(nat,nnsas,nnlists,xyz,vdwsa, &
         & wrp,trj2,angWeight,angGrid,sasa,dsdrt,tess)
+!$  use omp_lib
 
     !> Number of atoms
     integer,intent(in) :: nat
@@ -112,10 +113,10 @@ contains  !> MODULE PROCEDURES START HERE
     do iat = 1,nat
       call tess(iat)%allocate(size(angGrid,2))
     end do
-    !#$omp parallel do default(none) shared(sasa, dsdrt) &
-    !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, xyzt, areas, tess) &
-    !#$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
-    !#$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
+    !$omp parallel do default(none) shared(sasa, dsdrt) &
+    !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, tess) &
+    !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
+    !$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
     do iat = 1,nat
 
       rsas = vdwsa(iat)
@@ -175,6 +176,7 @@ contains  !> MODULE PROCEDURES START HERE
       tess(iat)%ap = areas
       tess(iat)%xyz = xyzt
     end do
+    !$omp end parallel do
 
   end subroutine compute_numsa
 

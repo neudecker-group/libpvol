@@ -88,6 +88,9 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
+    
+    real(wp),parameter :: geotol = 1.0e-7_wp
+
 
     !> reset output data elements
     self%energy = 0.0_wp
@@ -121,10 +124,13 @@ contains  !> MODULE PROCEDURES START HERE
       return
     end if
 
-    self%xyz(:,:) = xyz(:,:)
+    !!> check if we need to update the geometry?
+    !if(any(abs(self%xyz(:,:) - xyz(:,:)) > geotol))then
+      self%xyz(:,:) = xyz(:,:)
 
-    !> update surface calculator
-    call self%surf%update(at,xyz)
+      !> update surface calculator
+      call self%surf%update(at,xyz)
+    !endif
 
     !> singlpoint + gradient calculation
     call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient)
