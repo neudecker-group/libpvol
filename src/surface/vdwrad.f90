@@ -31,13 +31,12 @@ module xhcff_surface_vdwradd3
   implicit none
   private
 
-  public :: vanDerWaalsRadD3, vanDerWaalsRadBondi
+  public :: vanDerWaalsRadD3,vanDerWaalsRadBondi
   public :: getVanDerWaalsRad
 
   !>  convert bohr (a.u.) to Ångström and back
   real(wp),public,parameter :: autoaa = 0.52917726_wp
   real(wp),public,parameter :: aatoau = 1.0_wp/autoaa
-
 
 !&<
   !> D3 pairwise van-der-Waals radii (only homoatomic pairs present here)
@@ -66,49 +65,52 @@ module xhcff_surface_vdwradd3
      & 1.93220_wp, 1.86080_wp, 2.53980_wp, 2.46470_wp, &
      & 2.35215_wp, 2.21260_wp, 2.22970_wp, 2.19785_wp, &
      & 2.17695_wp, 2.21705_wp]
-!&>
 
-  !> corrected VDW Bondi radii
+  !> corrected VDW Bondi radii as taken from QChem
   !> only implemented for H - Ar
   real(wp), parameter :: vanDerWaalsRadBondi(1:18) = aatoau * [&
   & 1.10_wp, 1.40_wp, 1.81_wp, 1.53_wp, 1.92_wp, 1.70_wp, 1.55_wp, 1.52_wp, &
   & 1.47_wp, 1.54_wp, 2.27_wp, 1.73_wp, 1.84_wp, 2.10_wp, 1.80_wp, 1.80_wp, &
   & 1.75_wp, 1.88_wp]
-  !&>
-
+!&>
+!========================================================================================!
+!========================================================================================!
 contains
-  function getVanDerWaalsRad(number, set, iostat) result(rad)
-  integer, intent(in) :: number !> atom number
-  integer, intent(in) :: set !> set of VDW radii: 0 -> D3, 1 -> bondi
-  real(wp) :: rad !> resulting VDW rad in bohr
-  integer, optional, intent(inout) :: iostat !> error status
+!========================================================================================!
+!========================================================================================!
+  function getVanDerWaalsRad(number,set,iostat) result(rad)
+    integer,intent(in) :: number !> atom number
+    integer,intent(in) :: set !> set of VDW radii: 0 -> D3, 1 -> bondi
+    real(wp) :: rad !> resulting VDW rad in bohr
+    integer,optional,intent(inout) :: iostat !> error status
 
-  if(present(iostat)) then
-  iostat = 0
-  end if
-
-  select case (set)
-    case(0)
-    if((number < 94) .and. present(iostat)) then
-      iostat = 1
+    if (present(iostat)) then
+      iostat = 0
     end if
-    rad = getVanDerWaalsRadD3Number
 
-    case(1)
-    if((number < 18) .and. present(iostat)) then
-      iostat = 1
-    end if
-    rad = getVanDerWaalsRadBondiNumber
+    select case (set)
+    case (0)
+      if ((number < 94).and.present(iostat)) then
+        iostat = 1
+      end if
+      rad = getVanDerWaalsRadD3Number(number)
+
+    case (1)
+      if ((number < 18).and.present(iostat)) then
+        iostat = 1
+      end if
+      rad = getVanDerWaalsRadBondiNumber(number)
 
     case DEFAULT
-    if(present(iostat)) then
-      iostat = 2
+      if (present(iostat)) then
+        iostat = 2
       end if
-    rad = 0.0_wp
+      rad = 0.0_wp
     end select
 
-  end function
+  end function getVanDerWaalsRad
 
+!========================================================================================!
 !> Get van-der-Waals radius for species with a given atomic number
   elemental function getVanDerWaalsRadD3Number(number) result(rad)
 
@@ -126,6 +128,7 @@ contains
 
   end function getVanDerWaalsRadD3Number
 
+!========================================================================================!
   !> Get van-der-Waals radius for species with a given atomic number
   elemental function getVanDerWaalsRadBondiNumber(number) result(rad)
 
@@ -143,5 +146,7 @@ contains
 
   end function getVanDerWaalsRadBondiNumber
 
+!========================================================================================!
+!========================================================================================!
 end module xhcff_surface_vdwradd3
 
