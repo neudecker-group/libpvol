@@ -70,7 +70,7 @@ contains  !> MODULE PROCEDURES START HERE
         nvec = nvec/sqrt(nvec(1)**2+nvec(2)**2+nvec(3)**2)
 
         !> add tess point contribution to gradient
-        gradient(:,iat) = gradient(:,iat) + nvec*surf%tess(iat)%ap(it)*pressure
+        gradient(:,iat) = gradient(:,iat) - nvec*surf%tess(iat)%ap(it)*pressure
         !fvecs(:,it,iat) = nvec*surf%tess(iat)%ap(it)*pressure
 
       end do
