@@ -130,7 +130,7 @@ program xhcfflib_main_tester
 
     !> test difference to reference gradient
     !> gradients are mirrored
-    gradDiff = gradient + testGradBondi
+    gradDiff = gradient - testGradBondi
     fail = any(abs(graddiff(:,:)) > tolDiffBondi)
 
 

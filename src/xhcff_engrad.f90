@@ -65,7 +65,7 @@ contains  !> MODULE PROCEDURES START HERE
               xyzt = surf%tess(iat)%xyz(:,it)
               nvec = xyz(:,iat) - xyzt
               nvec = nvec / sqrt(nvec(1)**2 + nvec(2)**2 + nvec(3)**2)
-              fvecs(:, it, iat) = nvec * surf%tess(iat)%ap(it) * pressure
+              fvecs(:, it, iat) = -1.0_wp * nvec * surf%tess(iat)%ap(it) * pressure
             end do
     end do
 
