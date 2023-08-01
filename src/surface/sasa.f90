@@ -49,10 +49,15 @@ module xhcff_surface_sasa
   !> pi
   real(wp),parameter :: pi = 3.14159265359
 
-contains
+!========================================================================================!
+!========================================================================================!
+contains  !> MODULE PROCEDURES START HERE
+!========================================================================================!
+!========================================================================================!
 
   subroutine compute_numsa(nat,nnsas,nnlists,xyz,vdwsa, &
         & wrp,trj2,angWeight,angGrid,sasa,dsdrt,tess)
+!$  use omp_lib
 
     !> Number of atoms
     integer,intent(in) :: nat
@@ -99,7 +104,7 @@ contains
 
     sasa(:) = 0.0_wp
     dsdrt(:,:,:) = 0.0_wp
-    ! allocate space for the gradient storage
+    !> allocate space for the gradient storage
     allocate (grads(3,nat),source=0.0_wp)
     allocate (grds(3,maxval(nnsas)))
     allocate (grdi(maxval(nnsas)))
@@ -108,37 +113,37 @@ contains
     do iat = 1,nat
       call tess(iat)%allocate(size(angGrid,2))
     end do
-    !#$omp parallel do default(none) shared(sasa, dsdrt) &
-    !#$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, xyzt, areas, tess) &
-    !#$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, &
-    !#$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
+    !$omp parallel do default(none) shared(sasa, dsdrt) &
+    !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, tess) &
+    !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
+    !$omp& sasap, jj, nni, nnj, grdi, grds, drjj)
     do iat = 1,nat
 
       rsas = vdwsa(iat)
       nno = nnsas(iat)
 
-      ! initialize storage
+      !> initialize storage
       grads = 0.0_wp
       sasai = 0.0_wp
 
-      !reset areas and xyzt
+      !> reset areas and xyzt
       areas(:) = 0.0_wp
       xyzt(:,:) = 0.0_wp
 
-      ! atomic position
+      !> atomic position
       xyza(:) = xyz(:,iat)
-      ! radial atomic weight
+      !> radial atomic weight
       wr = wrp(iat)
 
-      ! loop over grid points
+      !> loop over grid points
       do ip = 1,size(angGrid,2)
-        ! grid point position
+        !> grid point position
         xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
 
-        ! save gridpoint position
+        !> save gridpoint position
         xyzt(1:3,ip) = xyzp
-        ! atomic surface function at the grid point
-        ! compute the distance to the atom
+        !> atomic surface function at the grid point
+        !> compute the distance to the atom
 
         call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, &
            & sasap,grds,nni,grdi)
@@ -146,14 +151,16 @@ contains
         if (sasap .gt. tolsesp) then
           if (sasap == 0.0_wp) then
           end if
-          ! numerical quadrature weight
+          !> numerical quadrature weight
           wsa = angWeight(ip)*wr*sasap
-          ! accumulate the surface area, sum in eq 10
+
+          !> accumulate the surface area, sum in eq 10
           sasai = sasai+wsa
-          ! save area tesspoint
+
+          !> save area tesspoint
           areas(ip) = wsa*4.0_wp*pi
 
-          ! accumulate the surface gradient
+          !> accumulate the surface gradient
           do jj = 1,nni
             nnj = grdi(jj)
             drjj(:) = wsa*grds(:,jj)
@@ -162,16 +169,18 @@ contains
           end do
         end if
       end do
-      ! finalize eq 10
+      !> finalize eq 10
       sasa(iat) = sasai*4.0_wp*pi
       dsdrt(:,:,iat) = grads
       tess(iat)%n = size(angGrid,2)
       tess(iat)%ap = areas
       tess(iat)%xyz = xyzt
     end do
+    !$omp end parallel do
 
   end subroutine compute_numsa
 
+!========================================================================================!
   pure subroutine compute_w_sp(nat,nnlists,trj2,vdwsa,xyza,nno,xyzp,sasap,grds, &
         &                      nni,grdi)
     implicit none
@@ -193,15 +202,15 @@ contains
     real(wp) :: uj,uj3,ah3uj2
     real(wp) :: sasaij,dsasaij
 
-    ! initialize storage
+    !> initialize storage
     nni = 0
     sasap = 1.0_wp
     do i = 1,nno
       ia = nnlists(i)
-      ! compute the distance to the atom
+      !> compute the distance to the atom
       tj(:) = xyzp(:)-xyza(:,ia)
       tj2 = tj(1)*tj(1)+tj(2)*tj(2)+tj(3)*tj(3)
-      ! if within the outer cut-off compute
+      !> if within the outer cut-off compute
       if (tj2 .lt. trj2(2,ia)) then
         if (tj2 .le. trj2(1,ia)) then
           sasap = 0.0_wp
@@ -209,26 +218,26 @@ contains
         else
 
           sqtj = sqrt(tj2)
-          ! r in eq. 6
+          !> r in eq. 6
           uj = sqtj-vdwsa(ia)
           ah3uj2 = ah3*uj*uj
           dsasaij = ah1+3.0_wp*ah3uj2
-          !eq 6, evaluation of atomic volume exclusion function
+          !> eq 6, evaluation of atomic volume exclusion function
           sasaij = ah0+(ah1+ah3uj2)*uj
 
-          ! accumulate the molecular surface, product in eq. 10
+          !> accumulate the molecular surface, product in eq. 10
           sasap = sasap*sasaij
-          ! compute the gradient wrt the neighbor
+          !> compute the gradient wrt the neighbor
           dsasaij = dsasaij/(sasaij*sqtj)
           nni = nni+1
           grdi(nni) = ia
           grds(:,nni) = dsasaij*tj(:)
         end if
-        ! check if the point is already buried
-!        if(sasap.lt.tolsesp) return
       end if
     end do
 
   end subroutine compute_w_sp
 
+!========================================================================================!
+!========================================================================================!
 end module xhcff_surface_sasa
