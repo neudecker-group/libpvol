@@ -191,10 +191,10 @@ contains  !> MODULE PROCEDURES START HERE
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
-    real(wp),intent(in) :: xyz(3,nat)
+    real(wp),intent(in) :: xyz(3,nat)        !> coordinates in Bohr
     real(wp),intent(in) :: pressure          !> pressure in GPa
     integer,intent(in),optional :: gridpts   !> gridpoints per atom to construct lebedev grid
-    real(wp),intent(in),optional :: proberad !> proberadius for sas calculation
+    real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in Bohr
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
     integer,intent(in),optional :: vdwSet !> Set of vdwRad to use: 0 -> D3, 1 -> Bondi
