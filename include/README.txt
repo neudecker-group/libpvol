@@ -1,0 +1,1 @@
+! This directory exists to be compatible wit GNU install conventions
