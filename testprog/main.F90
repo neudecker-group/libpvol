@@ -122,12 +122,13 @@ program xhcfflib_main_tester
   fail = ANY(abs(graddiff(:,:)) > tolDiffD3)
 
   if (fail) then
-    write (*,*) 'UNITTEST FAILED for D3 radii!'
     write (*,*) 'difference between calculated gradient and reference:'
 
     do i = 1,nat
       write (*,'(2x,i3,3x,3f16.12)') i,graddiff(1:3,i)
     end do
+    write (*,*) 'UNITTEST FAILED for D3 radii!'
+    stop
   else
     write (*,*) 'Test passed!'
   end if
@@ -145,12 +146,13 @@ program xhcfflib_main_tester
   fail = any(abs(graddiff(:,:)) > tolDiffBondi)
 
   if (fail) then
-    write (*,*) 'UNITTEST FAILED for Bondi radii!'
     write (*,*) 'difference between calculated gradient and reference:'
 
     do i = 1,nat
       write (*,'(2x,i3,3x,3f16.12)') i,graddiff(1:3,i)
     end do
+    write (*,*) 'UNITTEST FAILED for Bondi radii!'
+    stop
   else
     write (*,*) 'Test passed!'
   end if
