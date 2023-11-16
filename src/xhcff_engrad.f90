@@ -17,7 +17,10 @@
 ! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
+!>
 !> calculate xhcff gradient as desribed in 10.1063/5.0024671
+!>
+
 module xhcff_engrad
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use tesspoints,only:tesspts
@@ -35,7 +38,7 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
   !> pure gradient calculation
-  subroutine xhcff_eg(nat,at,xyz,pressure,surf,energy,gradient)
+  subroutine xhcff_eg(nat,at,xyz,pressure,surf,energy,gradient,volume)
     implicit none
     !> INPUT
     integer,intent(in)  :: nat        !> number of atoms
@@ -47,13 +50,13 @@ contains  !> MODULE PROCEDURES START HERE
     !> OUTPUT
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(3,nat)
+    real(wp),intent(out) :: volume !> volume in bohr ** 3
 
     !> LOCAL
     real(wp),allocatable :: fvecs(:,:,:)  !> matrix of force vectors
     real(wp) :: xyzt(3),nvec(3),trcorr(3) !> container for tesselation coords, normalvector and translationalcorrection
     integer :: iat,it !> counters
     integer  :: ntess  !> number of tesspoints per atom
-    real(wp) :: volume
 
     ntess = surf%tess(1)%n
     !allocate (fvecs(3,ntess,nat))
@@ -71,17 +74,12 @@ contains  !> MODULE PROCEDURES START HERE
 
         !> add tess point contribution to gradient
         gradient(:,iat) = gradient(:,iat) - nvec*surf%tess(iat)%ap(it)*pressure
-        nvec = nvec * -1
-        !write(*,*) (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt (3)) * surf%tess(iat)%ap(it)
-        volume = volume + (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)) * surf%tess(iat)%ap(it)
-        !fvecs(:,it,iat) = nvec*surf%tess(iat)%ap(it)*pressure
 
+        !> evaluate volume using the Gauß integral sentence
+        nvec = nvec * -1 !> give normal vectors correct orientation
+        volume = volume + (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)) * surf%tess(iat)%ap(it) / 3
       end do
     end do
-
-
-    !> calc gradient, eq. 4
-    !gradient = sum(fvecs,dim=2)
 
     !> correct for translations and rotations
     trcorr(1:3) = sum(gradient,dim=2)/nat

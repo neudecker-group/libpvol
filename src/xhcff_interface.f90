@@ -51,6 +51,7 @@ module xhcff_interface
 
     !> Output
     real(wp) :: energy
+    real(wp) :: volume !> volume in bohr ** 3
     real(wp),allocatable :: gradient(:,:)
 
     !> controle variables
@@ -134,7 +135,7 @@ contains  !> MODULE PROCEDURES START HERE
     !endif
 
     !> singlpoint + gradient calculation
-    call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient)
+    call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
 
     if (self%verbose) then
       call print_xhcff_results(self)
@@ -179,7 +180,7 @@ contains  !> MODULE PROCEDURES START HERE
       end if
 
     !> always print Volume
-    !write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%vol,"/ Bohr ** 3  "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%volume ,"/ Bohr ** 3  "
 
     if(self%printlevel >= 2) then
       write (myunit,*)
@@ -312,6 +313,7 @@ contains  !> MODULE PROCEDURES START HERE
     class(xhcff_calculator) :: self
 
     self%energy = 0.0_Wp
+    self%volume = 0.0_wp
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
