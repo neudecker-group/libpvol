@@ -46,6 +46,7 @@ module xhcff_interface
 
     ! IO stuff
     logical :: verbose
+    integer :: printlevel !> amount of printout
     integer :: myunit !> filehandling unit
 
     !> Output
@@ -158,34 +159,41 @@ contains  !> MODULE PROCEDURES START HERE
       myunit = self%myunit
     end if
 
-    write (myunit,*) '================================================================'
-    write (myunit,*) '====================== XHCFF Results ==========================='
-    write (myunit,*) '================================================================'
-
     !> print Errormessage if Error was detected and quit
     if (self%io /= 0) then
       call print_error(self%myunit,self%io)
       return
     end if
 
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
+    if(self%printlevel >= 1) then
+      write (myunit,*) '================================================================'
+      write (myunit,*) '====================== XHCFF Results ==========================='
+      write (myunit,*) '================================================================'
 
-    !> surface printout
-    if (allocated(self%surf)) then
-      call self%surf%info(myunit)
+      write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
     end if
 
-    write (myunit,*)
-    write (myunit,'(a)') '> XHCFF Gradient ( Eh/a0 ):'
-    do i = 1,self%nat
-      write (myunit,'(2x,i3,3x,3f16.6)'),i,self%gradient(1:3,i)
-    end do
+      !> surface printout
+      if (allocated(self%surf)) then
+        call self%surf%info(myunit)
+      end if
 
-  end subroutine print_xhcff_results
+    !> always print Volume
+    !write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%vol,"/ Bohr ** 3  "
+
+    if(self%printlevel >= 2) then
+      write (myunit,*)
+      write (myunit,'(a)') '> XHCFF Gradient ( Eh/a0 ):'
+      do i = 1,self%nat
+        write (myunit,'(2x,i3,3x,3f16.6)'),i,self%gradient(1:3,i)
+      end do
+    end if
+
+    end subroutine print_xhcff_results
 
 !========================================================================================!
   subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
-  &                 gridpts,proberad,verbose,iunit,vdwSet,iostat)
+  &                 gridpts,proberad,verbose,iunit,vdwSet,printlevel,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     class(xhcff_calculator),intent(inout) :: self
     !> INPUT
@@ -197,6 +205,7 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in Bohr
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
+    integer,intent(in),optional  :: printlevel !> printlevel, > 1 full printout
     integer,intent(in),optional :: vdwSet !> Set of vdwRad to use: 0 -> D3, 1 -> Bondi
     integer,intent(out),optional :: iostat
     !> LOCAL
@@ -214,6 +223,12 @@ contains  !> MODULE PROCEDURES START HERE
       self%verbose = verbose
     else
       self%verbose = .false.
+    end if
+
+    if(present(printlevel)) then
+      self%printlevel = printlevel
+      else
+        self%printlevel = 0
     end if
 
     if (present(iunit)) then
@@ -301,6 +316,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%pressure_au = 0
     self%pressure_gpa = 0
     self%io = 1
+    self%printlevel=0
     self%myunit = 6
     self%is_initialized = .false.
     self%bondi = .false.

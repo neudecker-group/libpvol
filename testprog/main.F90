@@ -113,7 +113,7 @@ program xhcfflib_main_tester
   write (*,*)
 
   !> Xhcff with D3 radii
-  call xhcff%init(nat,at,xyz,testpressure,proberad=testproberad,verbose=.false.)
+  call xhcff%init(nat,at,xyz,testpressure,proberad=testproberad,verbose=.false.,printlevel=2)
   call xhcff%singlepoint(nat,at,xyz,energy,gradient)
   call xhcff%info()
 
@@ -136,7 +136,7 @@ program xhcfflib_main_tester
   !> Xhcff with Bondi radii
   call xhcff%reset
   call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
-  &    proberad=testproberad,vdwSet=1,verbose=.false.)
+  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2)
   call xhcff%singlepoint(nat,at,xyz,energy,gradient)
   call xhcff%info()
 
