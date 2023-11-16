@@ -53,15 +53,15 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp) :: xyzt(3),nvec(3),trcorr(3) !> container for tesselation coords, normalvector and translationalcorrection
     integer :: iat,it !> counters
     integer  :: ntess  !> number of tesspoints per atom
+    real(wp) :: volume
 
     ntess = surf%tess(1)%n
     !allocate (fvecs(3,ntess,nat))
     gradient(:,:) = 0.0_wp
+    volume = 0.0_wp
 
     !> Evaluate gradient via eq. 3 and eq. 4
-    !$omp parallel do default(none) &
-    !$omp shared(surf, nat, ntess, pressure, xyz, gradient) &
-    !$omp private(iat, it, xyzt, nvec )
+
     do iat = 1,nat
       do it = 1,ntess
         !> calc force vectors, eq 3
@@ -71,11 +71,14 @@ contains  !> MODULE PROCEDURES START HERE
 
         !> add tess point contribution to gradient
         gradient(:,iat) = gradient(:,iat) - nvec*surf%tess(iat)%ap(it)*pressure
+        nvec = nvec * -1
+        !write(*,*) (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt (3)) * surf%tess(iat)%ap(it)
+        volume = volume + (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)) * surf%tess(iat)%ap(it)
         !fvecs(:,it,iat) = nvec*surf%tess(iat)%ap(it)*pressure
 
       end do
     end do
-    !$omp end parallel do
+
 
     !> calc gradient, eq. 4
     !gradient = sum(fvecs,dim=2)
@@ -85,7 +88,6 @@ contains  !> MODULE PROCEDURES START HERE
     do iat = 1,nat
       gradient(1:3,iat) = gradient(1:3,iat)-trcorr(1:3)
     end do
-
     energy = 0.0_wp
 
   end subroutine xhcff_eg
