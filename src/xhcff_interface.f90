@@ -172,12 +172,12 @@ contains  !> MODULE PROCEDURES START HERE
       write (myunit,*) '================================================================'
 
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
-    end if
 
       !> surface printout
       if (allocated(self%surf)) then
         call self%surf%info(myunit)
       end if
+    end if
 
     !> always print Volume
     write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%volume ,"/ Bohr ** 3  "
@@ -189,12 +189,11 @@ contains  !> MODULE PROCEDURES START HERE
         write (myunit,'(2x,i3,3x,3f16.6)'),i,self%gradient(1:3,i)
       end do
     end if
-
     end subroutine print_xhcff_results
 
 !========================================================================================!
   subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
-  &                 gridpts,proberad,verbose,iunit,vdwSet,printlevel,iostat)
+  &                 gridpts,proberad,scaling,verbose,iunit,vdwSet,printlevel,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
     class(xhcff_calculator),intent(inout) :: self
     !> INPUT
@@ -203,7 +202,8 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(in) :: xyz(3,nat)        !> coordinates in Bohr
     real(wp),intent(in) :: pressure          !> pressure in GPa
     integer,intent(in),optional :: gridpts   !> gridpoints per atom to construct lebedev grid
-    real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in Bohr
+    real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in angstrom
+    real(wp),intent(in),optional :: scaling  !> scaling of vdw radii to simulate sas
     logical,intent(in),optional  :: verbose
     integer,intent(in),optional  :: iunit
     integer,intent(in),optional  :: printlevel !> printlevel, > 1 full printout
@@ -219,7 +219,10 @@ contains  !> MODULE PROCEDURES START HERE
     call self%reset()
     io = 0
 
+    !>
     !> mapping of optional instuctions
+    !>
+
     if (present(verbose)) then
       self%verbose = verbose
     else
@@ -238,7 +241,10 @@ contains  !> MODULE PROCEDURES START HERE
       self%myunit = stdout
     end if
 
+    !>
     !> check input variables
+    !>
+
     if (present(gridpts).and.(io == 0)) then
       if (ALL(gridSize /= gridpts)) then
         io = 2
@@ -264,13 +270,19 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
+    if (present(scaling) .and. (io == 0)) then
+      if (scaling .lt. 0.0_wp) then
+        io = 8
+      end if
+    end if
+
     if (self%verbose) write (self%myunit,'(a)') '> XHCFF: calling surface calculator'
 
     !> surface calculator
     if (io == 0) then
       allocate (self%surf)
       call self%surf%setup(nat,at,xyz,.false.,surferr,ngrid=gridpts, &
-      &    probe=proberad,bondi=self%bondi)
+      &    probe=proberad,scaling=scaling,bondi=self%bondi)
 
       if (surferr /= 0) then
         io = 4
@@ -288,6 +300,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> init calc storage
     self%energy = 0.0_wp
+    self%volume = 0.0_wp
     allocate (self%gradient(3,nat))
     self%gradient = 0.0_wp
 
@@ -359,6 +372,9 @@ contains  !> MODULE PROCEDURES START HERE
 
     case (7)
       write (myunit,*) 'Passed geometry does not match previous one!'
+
+    case(8)
+      write (myunit,*) 'Scaling cannot be negative!'
     end select
 
   end subroutine print_error

@@ -193,7 +193,7 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe,Bondi)
+  subroutine setup_surface_calculator(self,nat,at,xyz,pr,ierr,ngrid,probe,scaling,Bondi)
     !> Error source
     character(len=*),parameter :: source = 'setup_surface_calculator'
 
@@ -215,6 +215,8 @@ contains   !> MODULE PROCEDURES START HERE
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
     real(wp),intent(in),optional :: probe
+    !> (optional) scaling factor for vdw radii
+    real(wp),intent(in),optional :: scaling
     !> (optional) use Bondi vdW radii instead of D3
     logical,intent(in),optional :: Bondi
 
@@ -245,6 +247,10 @@ contains   !> MODULE PROCEDURES START HERE
       if (Bondi) then !> Use Bondi vdW rad instead of D3?
         vdwRad = vanDerWaalsRadBondi
       end if
+    end if
+
+    if (present(scaling)) then
+        vdwRad = vdwRad * scaling
     end if
 
     !> call init_surface_calculator.

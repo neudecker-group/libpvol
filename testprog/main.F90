@@ -136,7 +136,7 @@ program xhcfflib_main_tester
   !> Xhcff with Bondi radii
   call xhcff%reset
   call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
-  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2)
+  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2, scaling=1.2_wp)
   call xhcff%singlepoint(nat,at,xyz,energy,gradient)
   call xhcff%info()
 
