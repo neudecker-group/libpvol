@@ -71,7 +71,7 @@ contains  !> MODULE PROCEDURES START HERE
         nvec = nvec/sqrt(nvec(1)**2+nvec(2)**2+nvec(3)**2)
 
         !> evaluate volume using the Gauß integral sentence
-        nvec = nvec * -1 !> give normal vectors correct orientation
+        !nvec = nvec * -1 !> give normal vectors correct orientation
         volume = volume + (nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)) * surf%tess(iat)%ap(it) / 3
       end do
     end do

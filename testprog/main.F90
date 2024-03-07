@@ -19,7 +19,7 @@
 
 program xhcfflib_main_tester
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use testmol
+  use coffeine
   use xhcff_interface
   use xhcff_surface_module
   use xhcff_engrad
@@ -82,7 +82,7 @@ program xhcfflib_main_tester
 
 !=======================================================================================!
 !=======================================================================================!
-!> STANDARD USAGE
+!> surface calculation
 !=======================================================================================!
 !=======================================================================================!
 
@@ -108,7 +108,7 @@ program xhcfflib_main_tester
 
   write (*,*)
   write (*,*) '==========================BEGIN================================='
-  write (*,*) '==================== XHCFF SINGLEPOINT ========================='
+  write (*,*) '================= TEST INTERNAL REFERENCE ======================'
   write (*,*) '==========================BEGIN================================='
   write (*,*)
 
@@ -133,15 +133,21 @@ program xhcfflib_main_tester
     write (*,*) 'Test passed!'
   end if
 
+  write (*,*)
+  write (*,*) '==========================BEGIN================================='
+  write (*,*) '================= TEST EXTERNAL REFERENCE ======================'
+  write (*,*) '==========================BEGIN================================='
+  write (*,*)
+
+
   !> Xhcff with Bondi radii
   call xhcff%reset
   call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
-  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2, scaling=1.2_wp)
+  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2)
   call xhcff%singlepoint(nat,at,xyz,energy,gradient)
   call xhcff%info()
 
   !> test difference to reference gradient
-  !> gradients are mirrored
   gradDiff = gradient-testGradBondi
   fail = any(abs(graddiff(:,:)) > tolDiffBondi)
 
@@ -159,7 +165,7 @@ program xhcfflib_main_tester
 
   write (*,*)
   write (*,*) '========================== END ================================='
-  write (*,*) '==================== XHCFF SINGLEPOINT ========================='
+  write (*,*) '======================== TESTING ==============================='
   write (*,*) '========================== END ================================='
 !=======================================================================================!
 
@@ -203,7 +209,7 @@ end program xhcfflib_main_tester
 
 !=======================================================================================!
 subroutine ompprint_intern(str)
-!$ use omp_lib
+use omp_lib
   implicit none
   integer :: nproc,TID
   character(len=*) :: str

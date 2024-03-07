@@ -103,27 +103,50 @@ target_link_libraries(
 )
 
 #
-# Executables
+# Executables / Testprograms
 #
 IF(build_exe)
-set(srcs2)
+
+set(xhcfftest)
+set(pvtest)
+
 add_subdirectory("testprog")
+
 add_executable(
-  ${PROJECT_NAME}-tester
-  "${srcs2}" 
+  ${PROJECT_NAME}-test2
+  "${pvtest}"
 )
 set_target_properties(
-  ${PROJECT_NAME}-tester
+  ${PROJECT_NAME}-test2
   PROPERTIES
   Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include
   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-  OUTPUT_NAME "${PROJECT_NAME}-tester"
+  OUTPUT_NAME "pv-tester"
 )
 target_link_libraries(
-  ${PROJECT_NAME}-tester
+  ${PROJECT_NAME}-test2
   PRIVATE
   "lib${PROJECT_NAME}.a"
 )
+
+add_executable(
+  ${PROJECT_NAME}-test1
+  "${xhcfftest}"
+)
+set_target_properties(
+  ${PROJECT_NAME}-test1
+  PROPERTIES
+  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include
+  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+  OUTPUT_NAME "xhcff-tester"
+)
+target_link_libraries(
+  ${PROJECT_NAME}-test1
+  PRIVATE
+  "lib${PROJECT_NAME}.a"
+)
+
+
 ENDIF()
 
 #

@@ -1,12 +1,14 @@
-module testmol
+module coffeine
 !> coffeine
   use iso_fortran_env,only:wp => real64
 
 !&<
   integer,parameter :: testnat = 24
+  !> Atomtypes
   integer, parameter :: testat(testnat) = [6,7,6,7,6,6,6,8,7,6,8,7,6,6, &
   &                                        1,1,1,1,1,1,1,1,1,1]
 
+  !> geometry in bohr
   real(wp),parameter :: testxyz(3,testnat) =    reshape(&
     &[ 2.02799738646442_wp,  0.09231312124713_wp, -0.14310895950963_wp, &
     &  4.75011007621000_wp,  0.02373496014051_wp, -0.14324124033844_wp, &
@@ -34,11 +36,13 @@ module testmol
     &  8.31511620712388_wp, -9.76854236502758_wp, -1.79108242206824_wp], &
     &  shape(testxyz))
 
-  real(wp), parameter :: testpressure = 10.0_wp !> testpressure in GPa
+  !> testpressure in GPa
+  real(wp), parameter :: testpressure = 10.0_wp
 
+  !> proberad in GPa
   real(wp), parameter :: testproberad = 0.0_wp
 
-  !> internally generated as consistency check
+  !> internally generated Gradient as consistency check
   real(wp),parameter :: testGradD3(3,testnat) =    reshape(&
       &[ -0.001050_wp,  0.000044_wp, -0.000000_wp, &
       &  -0.000395_wp,  0.000023_wp, -0.000004_wp, &
@@ -95,13 +99,15 @@ module testmol
   &  shape(testGradBondi))
 !&>
 
-  public :: testnat
-  public :: testat
-  public :: testxyz
-  public :: testpressure
-  public :: testproberad
-  public :: testgrad
-  public :: writetestcoord
+  ! Volume using unscaled Bondi Radii
+
+  !public :: testnat
+  !public :: testat
+  !public :: testxyz
+  !public :: testpressure
+  !public :: testproberad
+  !public :: testgrad
+  !public :: writetestcoord
 
   character(len=2),parameter :: testelem(8) = ['h ','he','li','be', &
       &                        'b ','c ','n ','o ']
@@ -123,4 +129,4 @@ contains
 
   end subroutine writetestcoord
 
-end module testmol
+end module coffeine

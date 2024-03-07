@@ -1,10 +1,18 @@
 
 set(dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
-list(APPEND srcs2
-  "${dir}/testmol.f90"
+list(APPEND xhcfftest
+  "${dir}/coffeine.f90"
   "${dir}/timer.f90"
   "${dir}/main.F90"
 )
 
-set(srcs2 ${srcs2} PARENT_SCOPE)
+set(xhcfftest ${xhcfftest} PARENT_SCOPE)
+
+list(APPEND pvtest
+  "${dir}/coffeine.f90"
+  "${dir}/lih.f90"
+  "${dir}/timer.f90"
+  "${dir}/test_pv.F90"
+)
+set(pvtest ${pvtest} PARENT_SCOPE)

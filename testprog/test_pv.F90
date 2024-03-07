@@ -1,4 +1,4 @@
-!================================================================================!
+  !================================================================================!
 ! This file is part of xhcfflib.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
@@ -17,39 +17,44 @@
 ! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
-program xhcfflib_main_tester
+program xhcfflib_pv_tester
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use testmol
-  use xhcff_interface
+  use lih
+  use pv_interface
   use xhcff_surface_module
-  use xhcff_engrad
+  use pv_engrad
   use xhcff_type_timer
   implicit none
 
   integer :: nat
   integer,allocatable :: at(:)
   real(wp),allocatable :: xyz(:,:)
+  real(wp),allocatable :: stencil(:,:) !> stencil geom
   integer :: chrg
   integer :: uhf
   integer :: i,j,k,l
   character(len=40) :: atmp
 !========================================================================================!
-  real(wp) :: p,probe
+  real(wp) :: p, probe
+  real(wp) :: fw, bw !> stencils
   real(wp) :: energy
   real(wp),allocatable :: gradient(:,:)
+  real(wp),allocatable :: numGrad(:,:)
   real(wp),allocatable :: gradDiff(:,:)
   real(wp) :: gnorm
 
   logical :: fail,pr
   integer :: io
-  type(xhcff_calculator) :: xhcff
+  type(pv_calculator) :: pv
   type(surface_calculator) :: surf
 
   integer :: ntimes
   type(xhcff_timer) :: timer
 
+  real(wp) :: eDiff
+
   real(wp),parameter :: tolDiffD3 = 1e-6 !> tolerable difference for gradient units
-  real(wp),parameter :: tolDiffBondi = 2e-4 !> tolerable difference for gradient units
+  real(wp),parameter :: tolDiffBondiEnergy = 5e-4 !> tolerable difference for PV term
 
   integer :: threads
 !========================================================================================!
@@ -57,7 +62,7 @@ program xhcfflib_main_tester
   pr = .true.
 
   nat = testnat
-  allocate (at(nat),xyz(3,nat))
+  allocate (at(nat),xyz(3,nat),stencil(3,nat))
   at = testat
   xyz = testxyz
   p = testpressure
@@ -68,6 +73,7 @@ program xhcfflib_main_tester
   gnorm = 0.0_wp
   allocate (gradient(3,nat),source=0.0_wp)
   allocate (graddiff(3,nat),source=0.0_wp)
+  allocate (numGrad(3,nat), source=0.0_wp)
   write (*,*) nat
   write (*,*)
   do i = 1,nat
@@ -82,7 +88,7 @@ program xhcfflib_main_tester
 
 !=======================================================================================!
 !=======================================================================================!
-!> STANDARD USAGE
+!> Surface calculation USAGE
 !=======================================================================================!
 !=======================================================================================!
 
@@ -108,65 +114,65 @@ program xhcfflib_main_tester
 
   write (*,*)
   write (*,*) '==========================BEGIN================================='
-  write (*,*) '==================== XHCFF SINGLEPOINT ========================='
+  write (*,*) '====================  PV SINGLEPOINT  =========================='
   write (*,*) '==========================BEGIN================================='
   write (*,*)
 
-  !> Xhcff with D3 radii
-  call xhcff%init(nat,at,xyz,testpressure,proberad=testproberad,verbose=.false.,printlevel=2)
-  call xhcff%singlepoint(nat,at,xyz,energy,gradient)
-  call xhcff%info()
+  !=======================!
+  !>  PV with D3 radii
+  !=======================!
+ ! call pv%init(nat,at,xyz,testpressure,proberad=testproberad,verbose=.false.,printlevel=2)
+ ! call pv%singlepoint(nat,at,xyz,energy,gradient)
+ ! call pv%info()
 
-  !> test difference to reference gradient
-  gradDiff = gradient-testGradD3
-  fail = ANY(abs(graddiff(:,:)) > tolDiffD3)
+  !> test difference to reference volume
+  
 
-  if (fail) then
-    write (*,*) 'difference between calculated gradient and reference:'
+  !==========================!
+  !>  PV with Bondi radii
+  !==========================!
+  !call pv%reset
+  call pv%init(nat,at,xyz,testpressure,gridpts=5294, &
+  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2)
+  call pv%singlepoint(nat,at,xyz,energy,gradient)
+  call pv%info()
 
-    do i = 1,nat
-      write (*,'(2x,i3,3x,3f16.12)') i,graddiff(1:3,i)
-    end do
-    write (*,*) 'UNITTEST FAILED for D3 radii!'
+  !> test energy difference
+  eDiff = energy-testpv_bondi
+  fail = abs(eDiff) > tolDiffBondiEnergy
+  if (fail) then 
+    write (*,*) '**** UNITTEST FAILED while Comparing Energies! *****'
+    write (*,'(3A16)') 'Energy', 'Ref', 'Diff'
+    write (*,'(3f16.12)') energy, testpv_bondi, eDiff
     stop
-  else
-    write (*,*) 'Test passed!'
   end if
 
-  !> Xhcff with Bondi radii
-  call xhcff%reset
-  call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
-  &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2, scaling=1.2_wp)
-  call xhcff%singlepoint(nat,at,xyz,energy,gradient)
-  call xhcff%info()
-
-  !> test difference to reference gradient
-  !> gradients are mirrored
-  gradDiff = gradient-testGradBondi
-  fail = any(abs(graddiff(:,:)) > tolDiffBondi)
-
-  if (fail) then
-    write (*,*) 'difference between calculated gradient and reference:'
-
-    do i = 1,nat
-      write (*,'(2x,i3,3x,3f16.12)') i,graddiff(1:3,i)
+  stencil = xyz
+  do i = 1,nat
+    do j = 1,3
+      stencil(j,i) = stencil(j,i) + 0.001
+      call pv%singlepoint(nat,at,stencil,fw,gradient)
+      stencil(j,i) = stencil(j,i) -0.002
+      call pv%singlepoint(nat,at,stencil,bw,gradient)
+      numGrad(j,i) = (fw - bw)/0.002
+      stencil(j,i) = xyz(j,i)
     end do
-    write (*,*) 'UNITTEST FAILED for Bondi radii!'
-    stop
-  else
-    write (*,*) 'Test passed!'
-  end if
+  end do
+
+  do i=1,nat
+    write(*,'(3f16.12)') numGrad(1:3,i)
+  end do
 
   write (*,*)
   write (*,*) '========================== END ================================='
-  write (*,*) '==================== XHCFF SINGLEPOINT ========================='
+  write (*,*) '=====================  PV SINGLEPOINT  ========================='
   write (*,*) '========================== END ================================='
 !=======================================================================================!
 
   if (threads > 0) then
     write (*,*)
     write (*,*) '==========================BEGIN================================='
-    write (*,*) '==================== XHCFF OpenMP TEST ========================='
+    write (*,*) '=====================  PV OpenMP TEST  ========================='
     write (*,*) '==========================BEGIN================================='
 
     ntimes = threads
@@ -179,11 +185,11 @@ program xhcfflib_main_tester
       call ompprint_intern(atmp)
 
       call timer%measure(i,atmp)
-      call xhcff%reset
-      call xhcff%init(nat,at,xyz,testpressure,gridpts=5294, &
+      call pv%reset
+      call pv%init(nat,at,xyz,testpressure,gridpts=5294, &
      &    proberad=testproberad,vdwSet=1,verbose=.false.)
       do j = 1,250 !> a few repetitions to actually see some CPU time...
-        call xhcff%singlepoint(nat,at,xyz,energy,gradient)
+        call pv%singlepoint(nat,at,xyz,energy,gradient)
       end do
       call timer%measure(i)
       write (*,*)
@@ -196,14 +202,14 @@ program xhcfflib_main_tester
     write (*,*) '========================== END ================================='
   end if
 !=======================================================================================!
-  deallocate (gradient)
-  deallocate (xyz,at)
+  deallocate (gradient,gradDiff,numGrad)
+  deallocate (xyz,at,stencil)
 !=======================================================================================!
-end program xhcfflib_main_tester
+end program xhcfflib_pv_tester
 
 !=======================================================================================!
 subroutine ompprint_intern(str)
-!$ use omp_lib
+ use omp_lib
   implicit none
   integer :: nproc,TID
   character(len=*) :: str
