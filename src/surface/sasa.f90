@@ -97,7 +97,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     real(wp) :: tj(3),tj2
 
-    integer :: iat,jat,ip,jj,nnj,nnk,nni,nno
+    integer :: iat,jat,ip,jj,nnj,nnk,nni,nno,l
     real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,drjj(3),length
     real(wp),allocatable :: grds(:,:),grads(:,:),xyzt(:,:),areas(:)
     integer,allocatable :: grdi(:)
@@ -111,7 +111,7 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (xyzt(3,size(angGrid,2)))
     allocate (areas(size(angGrid,2)))
     do iat = 1,nat
-      call tess(iat)%allocate(size(angGrid,2))
+      call tess(iat)%allocate(size(angGrid,2),nat)
     end do
     !$omp parallel do default(none) shared(sasa, dsdrt) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2, tess) &
@@ -163,7 +163,9 @@ contains  !> MODULE PROCEDURES START HERE
           !> accumulate the surface gradient
           do jj = 1,nni
             nnj = grdi(jj)
-            drjj(:) = wsa*grds(:,jj)
+            drjj(:) = wsa*grds(:,jj)*4.0_wp*pi
+            tess(iat)%dadr(:,iat,ip) = drjj
+            tess(iat)%dadr(:,nnj,ip) = -drjj
             grads(:,iat) = grads(:,iat)+drjj(:)
             grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do

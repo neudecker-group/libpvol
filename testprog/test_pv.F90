@@ -147,6 +147,7 @@ program xhcfflib_pv_tester
     stop
   end if
 
+  write(*,*) 'Numerical gradient'
   stencil = xyz
   do i = 1,nat
     do j = 1,3

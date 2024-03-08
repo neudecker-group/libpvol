@@ -2,6 +2,14 @@
 *.mod
 *.a
 *.tgz
+*.xml
+cmake_install.cmake
+Makefile
+cmake-build-debug/
+xhcfflib/
+CMakeFiles/
+.idea/
+config/
 github_bin/
 build_majestix
 build_commands
