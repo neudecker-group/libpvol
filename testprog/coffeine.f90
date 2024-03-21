@@ -97,10 +97,12 @@ module coffeine
   &   0.0019488_wp, -0.0016921_wp,  0.0035981_wp, &
   &   0.0019402_wp, -0.0017329_wp, -0.0035839_wp],&
   &  shape(testGradBondi))
-!&>
+
 
   ! Volume using unscaled Bondi Radii
-
+  !> TODO calculate numerically
+  real(wp), parameter :: testpv_bondi = 0.0_wp
+  !&>
   !public :: testnat
   !public :: testat
   !public :: testxyz

@@ -53,7 +53,7 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: volume !> volume in bohr ** 3
 
     !> LOCAL
-    real(wp) :: xyzt(3),nvec(3),trcorr(3) !> container for tesselation coords, normalvector and translationalcorrection
+    real(wp) :: xyzt(3),nvec(3) !> container for tesselation coords, normalvector
     integer :: iat, it !> counters
     integer  :: ntess  !> number of tesspoints per atom
     real(wp) :: rdotn  !> dot product of normal an coordinate vector of tessera
@@ -66,26 +66,28 @@ contains  !> MODULE PROCEDURES START HERE
 
     do iat = 1,nat
       do it = 1,ntess
-        !> calc force vectors, eq 3
+        if (surf%tess(iat)%ap(it) /= 0) then
+        !> calc surface normals
         xyzt = surf%tess(iat)%xyz(:,it)
         nvec = xyzt - xyz(:,iat)
         nvec = nvec / sqrt(nvec(1)**2+nvec(2)**2+nvec(3)**2)
+        !> dot product of position and normal vector
         rdotn = nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)
-
         !> evaluate volume using the Gauß integral sentence
-        !nvec = nvec * -1 !> give normal vectors correct orientation
-        volume = volume + rdotn * surf%tess(iat)%ap(it) / 3
+        volume = volume + rdotn * surf%tess(iat)%ap(it) / 3.0_wp
         
         !> evaluate gradient
-        gradient(:,iat) = gradient(:,iat) + (nvec * surf%tess(iat)%ap(it)) / 3
-        gradient = gradient + (rdotn * surf%tess(iat)%dadr(:,:,it)) / 3
+        gradient(:,iat) = gradient(:,iat) + (nvec * surf%tess(iat)%ap(it)) / 3.0_wp
+        gradient = gradient + (rdotn * surf%tess(iat)%dadr(:,:,it)) / 3.0_wp
+        end if
       end do
     end do
 
     !> Energy is simply PV term
     energy = volume * pressure
     gradient = gradient * pressure
-    !> Gradient
+
+!> Gradient
     ! TODO implement
 
   end subroutine pv_eg

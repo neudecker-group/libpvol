@@ -8,11 +8,10 @@ module lih
   integer, parameter :: testat(testnat) = [3, 1]
 
   !> geometry in bohr
-  real(wp),parameter :: testxyz(3,testnat) =    reshape(&
+    real(wp),parameter :: testxyz(3,testnat) =    reshape(&
      [-6.69361629282015_wp,  1.98625390237610_wp,  0.122449150639047_wp, & 
     & -4.70384466526237_wp,  1.93397236145680_wp,  0.721668265764252_wp], &
     &  shape(testxyz))
-
   !> testpressure in GPa
   real(wp), parameter :: testpressure = 10.0_wp
 
@@ -31,7 +30,7 @@ module lih
 
   ! Volume using unscaled Bondi Radii in Bohr ** 3
   real(wp), parameter :: testvol_bondi = 173.14791628632412_wp
-  real(wp), parameter :: testpv_bondi = 0.0588517815670768
+  real(wp), parameter :: testpv_bondi = 0.0588517815670768_wp
   !public :: testnat
   !public :: testat
   !public :: testxyz

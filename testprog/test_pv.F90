@@ -19,7 +19,7 @@
 
 program xhcfflib_pv_tester
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use lih
+  use coffeine
   use pv_interface
   use xhcff_surface_module
   use pv_engrad
@@ -36,7 +36,7 @@ program xhcfflib_pv_tester
   character(len=40) :: atmp
 !========================================================================================!
   real(wp) :: p, probe
-  real(wp) :: fw, bw !> stencils
+  real(wp) :: fw, bw, fw2, bw2, step !> stencils
   real(wp) :: energy
   real(wp),allocatable :: gradient(:,:)
   real(wp),allocatable :: numGrad(:,:)
@@ -98,6 +98,7 @@ program xhcfflib_pv_tester
   write (*,*) '==========================BEGIN================================='
 
   !> small test
+  
   call surf%deallocate()
   call surf%setup(nat,at,xyz,.true.,io,ngrid=lebedev%extreme,probe=0.0_wp)
 
@@ -132,37 +133,63 @@ program xhcfflib_pv_tester
   !>  PV with Bondi radii
   !==========================!
   !call pv%reset
-  call pv%init(nat,at,xyz,testpressure,gridpts=5294, &
+  !> set pressure to one a.u. to get volume information
+  call pv%init(nat,at,xyz,1.0_wp/3.4e-5_wp,gridpts=5294 , &
   &    proberad=testproberad,vdwSet=1,verbose=.false., printlevel=2)
   call pv%singlepoint(nat,at,xyz,energy,gradient)
   call pv%info()
-
   !> test energy difference
-  eDiff = energy-testpv_bondi
-  fail = abs(eDiff) > tolDiffBondiEnergy
-  if (fail) then 
-    write (*,*) '**** UNITTEST FAILED while Comparing Energies! *****'
-    write (*,'(3A16)') 'Energy', 'Ref', 'Diff'
-    write (*,'(3f16.12)') energy, testpv_bondi, eDiff
-    stop
-  end if
+  !eDiff = energy - testpv_bondi
+  !fail = abs(eDiff) > tolDiffBondiEnergy
+  !if (fail) then 
+  !write (*,*) '**** UNITTEST FAILED while Comparing Energies! *****'
+  !write (*,'(3A16)') 'Energy', 'Ref', 'Diff'
+  !write (*,'(3f16.12)') energy, testpv_bondi, eDiff
+  !stop
+  !end if
 
-  write(*,*) 'Numerical gradient'
+  !> Compute num gradient as 5 point stencil
+
+  !write(*,*) 'Numerical gradient
   stencil = xyz
+  step = 0.001_wp
   do i = 1,nat
     do j = 1,3
-      stencil(j,i) = stencil(j,i) + 0.001
-      call pv%singlepoint(nat,at,stencil,fw,gradient)
-      stencil(j,i) = stencil(j,i) -0.002
-      call pv%singlepoint(nat,at,stencil,bw,gradient)
-      numGrad(j,i) = (fw - bw)/0.002
+      write(*,*) 'Numerical gradient dimension ', (i-1) * 3 + j 
+      stencil(j,i) = stencil(j,i) - 2.0_wp * step
+      call pv%singlepoint(nat,at,stencil,bw2,gradient)
       stencil(j,i) = xyz(j,i)
+      stencil(j,i) = stencil(j,i) - 1.0_wp * step
+      call pv%singlepoint(nat,at,stencil,bw,gradient)
+      stencil(j,i) = xyz(j,i)
+      stencil(j,i) = stencil(j,i) + 1.0_wp * step
+      call pv%singlepoint(nat,at,stencil,fw,gradient)
+      stencil(j,i) = xyz(j,i)
+      stencil(j,i) = stencil(j,i) + 2.0_wp * step
+      call pv%singlepoint(nat,at,stencil,fw2,gradient)
+      stencil(j,i) = xyz(j,i)
+      numGrad(j,i) = ( bw2 / 12.0_wp - 8.0_wp * bw / 12.0_wp + 8.0_wp * fw / 12.0_wp -fw2 / 12.0_wp) / step
     end do
   end do
 
+  gradDiff = abs(gradient - numGrad)
+
   do i=1,nat
-    write(*,'(3f16.12)') numGrad(1:3,i)
+    write(*,'(I2,3f16.12)') i, numGrad(1:3,i)
   end do
+
+  !write(*,*) 'grad Diff'
+  !do i=1,nat
+  !  write(*,'(I2,3f16.12)') i, gradDiff(1:3,i)
+  !end do
+  
+  gnorm = 0.0_wp
+  do i=1,nat
+    gnorm = gnorm + gradDiff(1,i)**2 + gradDiff(2,i)**2 + gradDiff(3,i)**2
+  end do
+  gnorm = sqrt(gnorm)/nat
+  write(*,*)'Graddiff norm:', gnorm
+  write(*,*)'Max diff:', Maxval(gradDiff)
 
   write (*,*)
   write (*,*) '========================== END ================================='

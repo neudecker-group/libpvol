@@ -36,12 +36,12 @@ module xhcff_surface_sasa
   real(wp),parameter :: aatoau = 1.0_wp/autoaa
   real(wp),parameter :: w = 0.3_wp*aatoau
   real(wp),parameter :: w3 = w*(w*w)
-  ! const part of eq 6
+  ! const part of eq 9
   real(wp),parameter :: ah0 = 0.5_wp
-  ! const 2nd part of eq 6
-  real(wp),parameter :: ah1 = 3._wp/(4.0_wp*w)
+  ! const 2nd part of eq 9
+  real(wp),parameter :: ah1 = 3.0_wp/(4.0_wp*w)
   ! const 3rd part of eq 6
-  real(wp),parameter :: ah3 = -1._wp/(4.0_wp*w3)
+  real(wp),parameter :: ah3 = -1.0_wp/(4.0_wp*w3)
 
   !> real space cut-offs
   real(wp),parameter :: tolsesp = 1.e-6_wp
@@ -147,10 +147,7 @@ contains  !> MODULE PROCEDURES START HERE
 
         call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, &
            & sasap,grds,nni,grdi)
-
         if (sasap .gt. tolsesp) then
-          if (sasap == 0.0_wp) then
-          end if
           !> numerical quadrature weight
           wsa = angWeight(ip)*wr*sasap
 
@@ -164,16 +161,16 @@ contains  !> MODULE PROCEDURES START HERE
           do jj = 1,nni
             nnj = grdi(jj)
             drjj(:) = wsa*grds(:,jj)*4.0_wp*pi
-            tess(iat)%dadr(:,iat,ip) = drjj
-            tess(iat)%dadr(:,nnj,ip) = -drjj
-            grads(:,iat) = grads(:,iat)+drjj(:)
-            grads(:,nnj) = grads(:,nnj)-drjj(:)
+            tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip) + drjj
+            tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip) - drjj
+            !grads(:,iat) = grads(:,iat)+drjj(:)
+            !grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do
         end if
       end do
       !> finalize eq 10
       sasa(iat) = sasai*4.0_wp*pi
-      dsdrt(:,:,iat) = grads
+      !dsdrt(:,:,iat) = grads
       tess(iat)%n = size(angGrid,2)
       tess(iat)%ap = areas
       tess(iat)%xyz = xyzt
@@ -218,13 +215,12 @@ contains  !> MODULE PROCEDURES START HERE
           sasap = 0.0_wp
           return
         else
-
           sqtj = sqrt(tj2)
-          !> r in eq. 6
+          !> r in eq. 9
           uj = sqtj-vdwsa(ia)
           ah3uj2 = ah3*uj*uj
           dsasaij = ah1+3.0_wp*ah3uj2
-          !> eq 6, evaluation of atomic volume exclusion function
+          !> eq 9, evaluation of atomic volume exclusion function
           sasaij = ah0+(ah1+ah3uj2)*uj
 
           !> accumulate the molecular surface, product in eq. 10
