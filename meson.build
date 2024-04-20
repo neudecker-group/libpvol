@@ -42,10 +42,11 @@ xhcfflib_dep = declare_dependency(
 
 # Create executable target
 if get_option('build_exe')
-subdir('testprog')
+app = []
+subdir('app')
 xhcfflib_exe = executable(
-  'xhcff-tester',
-  sources: prog,
+  'xhcff',
+  sources: app,
   dependencies: xhcfflib_dep,
   install: install,
   link_language: 'fortran',
@@ -54,4 +55,6 @@ endif
 
 
 # add the testsuite separate meson.build 
-#subdir('testsuite') #has to be filled with tests, not availabel yet
+if get_option('WITH_TESTS')
+subdir('test')
+endif

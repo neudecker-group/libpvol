@@ -1,8 +1,8 @@
 srcs += files(
 )
 
-prog += files(
-  'testmol.f90',
+app += files(
+  'xyzreader.f90',
   'timer.f90',
   'main.F90',
 )

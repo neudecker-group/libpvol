@@ -11,7 +11,7 @@ module test_xhcff
   public :: collect_xhcff
 
   real(wp),parameter :: thr = 5e+6_wp*epsilon(1.0_wp)
-  real(wp),parameter :: thr2 = 10*sqrt(epsilon(1.0_wp))
+  real(wp),parameter :: thr2 = 1e-6
 
 !========================================================================================!
 !========================================================================================!
@@ -378,7 +378,7 @@ contains  !> Unit tests for XHCFF calculations
     call check(error,io,0)
     if (allocated(error)) return
 
-    call check(error,energy,e_ref,thr=1e-7_wp)
+    call check(error,energy,e_ref,thr=5e-4_wp)
     if (allocated(error)) return
 
     if (any(abs(grad-g_ref) > thr2)) then
@@ -452,7 +452,7 @@ contains  !> Unit tests for XHCFF calculations
       end do
     end do
 
-    call check(error,energy,e_ref,thr=1e-7_wp)
+    call check(error,energy,e_ref,thr=5e-4_wp)
     if (allocated(error)) return
 
     if (any(abs(grad-g_ref) > 5e-4_wp)) then

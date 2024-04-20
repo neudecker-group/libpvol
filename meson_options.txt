@@ -41,3 +41,10 @@ option(
   value: false,
   description: 'build with a test binary',
 )
+option(
+  'WITH_TESTS',
+  type: 'boolean',
+  value: true,
+  description: 'Include test directory',
+)
+

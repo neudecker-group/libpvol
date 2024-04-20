@@ -158,4 +158,15 @@ endif
 ## ========================================= ##
 ## External subprojects
 ## ========================================= ##  
+if get_option('WITH_TESTS')
+testdrive_dep = dependency(
+  'test-drive',
+  version: '>=0.1',
+  fallback: ['test-drive', 'testdrive_dep'],
+  required: not meson.is_subproject(),
+  default_options: [
+    'default_library=static',
+  ],
+)
+endif
 
