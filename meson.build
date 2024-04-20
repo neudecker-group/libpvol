@@ -17,14 +17,10 @@ install = not (meson.is_subproject() and get_option('default_library') == 'stati
 exe_deps = []
 subdir('config')
 
-# Documentation
-#subdir('docs')
-
 # Collect source of the project
 prog = []
 srcs = []
 subdir('src')
-
 
 # Create library target
 xhcfflib_lib = library(

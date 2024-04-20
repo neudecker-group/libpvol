@@ -145,6 +145,9 @@ contains  !> MODULE PROCEDURES START HERE
     energy = self%energy
     gradient = self%gradient
 
+    if (present(iostat)) then
+      iostat = 0
+    end if
   end subroutine pv_singlepoint
 
 !========================================================================================!

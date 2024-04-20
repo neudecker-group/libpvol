@@ -17,6 +17,7 @@ project(
   "xhcff"
   LANGUAGES "Fortran" "C"
   VERSION "0.0.1"
+  DESCRIPTION "Hydrostatic pressure force-field library"
 )
 
 
@@ -27,60 +28,54 @@ include(GNUInstallDirs)
 set(libs)
 add_subdirectory("config")
 
+###############################################################################
+####################### SUBPROJECTS & DEPENDENCIES ############################
+###############################################################################
 
-#
-# Libraries
-#
-
-# OpenMP dependency
-if(NOT TARGET OpenMP::OpenMP_Fortran AND WITH_OpenMP)
-  find_package(OpenMP REQUIRED)
-  list(
-    APPEND libs
-    OpenMP::OpenMP_Fortran
-  )
-endif()
-
-# BLAS and LAPACK
-if(NOT TARGET BLAS::BLAS)
-  find_package(BLAS REQUIRED)
-  if(NOT TARGET BLAS::BLAS AND BLAS_FOUND)
-    add_library(BLAS::BLAS INTERFACE IMPORTED)
-    target_link_libraries(BLAS::BLAS INTERFACE "${BLAS_LIBRARIES}")
-    target_link_options(BLAS::BLAS INTERFACE "${BLAS_LINKER_FLAGS}")
+# OpenMP parallelization
+if(NOT TARGET "OpenMP::OpenMP_Fortran")
+  if (WITH_OpenMP)
+    find_package("OpenMP" REQUIRED)
+    add_compile_definitions(WITH_OpenMP) 
+  else()
+    # Create dummy library
+    add_library("OpenMP::OpenMP_Fortran" INTERFACE IMPORTED)
   endif()
 endif()
-if(NOT TARGET LAPACK::LAPACK)
-  find_package(LAPACK REQUIRED)
-  if(NOT TARGET LAPACK::LAPACK AND LAPACK_FOUND)
-    add_library(LAPACK::LAPACK INTERFACE IMPORTED)
-    target_link_libraries(LAPACK::LAPACK INTERFACE "${LAPACK_LIBRARIES}")
-    target_link_options(LAPACK::LAPACK INTERFACE "${LAPACK_LINKER_FLAGS}")
-  endif()
+
+# Linear algebra (contains BLAS)
+if(NOT TARGET "LAPACK::LAPACK")
+  find_package("LAPACK" REQUIRED)
 endif()
-list(
-  APPEND libs
-  LAPACK::LAPACK
-  BLAS::BLAS
+
+# Fortran unit test interface (also used by other subprojects)
+if(NOT TARGET "test-drive::test-drive" AND WITH_TESTS)
+   find_package("test-drive" REQUIRED)
+endif()
+
+set(
+  lib-deps
+  "OpenMP::OpenMP_Fortran"
+  "LAPACK::LAPACK"
+  "$<$<VERSION_LESS:${CMAKE_VERSION},3.20>:BLAS::BLAS>"
 )
 
-
-#
-# xhcfflib sources
-#
+# xhcff-lib sources
 set(srcs)
 add_subdirectory("src")
 
 
-#
-# Build the lib
-#
+###############################################################################
+############################### Static Library ################################
+###############################################################################
+
+# tight-binding library target
 add_library(
-  "lib${PROJECT_NAME}.a"
+  "${PROJECT_NAME}-lib"
   "${srcs}"
 )
 set_target_properties(
-  "lib${PROJECT_NAME}.a"
+  "${PROJECT_NAME}-lib"
   PROPERTIES
   POSITION_INDEPENDENT_CODE TRUE
   OUTPUT_NAME "${PROJECT_NAME}"
@@ -89,75 +84,33 @@ set_target_properties(
   WINDOWS_EXPORT_ALL_SYMBOLS TRUE
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include"
 )
+target_link_libraries(
+  "${PROJECT_NAME}-lib"
+  PUBLIC
+  "${lib-deps}"
+)
 target_include_directories(
-  "lib${PROJECT_NAME}.a"
+  "${PROJECT_NAME}-lib"
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${module-dir}>
 )
-target_link_libraries(
-  "lib${PROJECT_NAME}.a"
-  PUBLIC
-  "${libs}"
-)
+if(NOT EXISTS "${PROJECT_BINARY_DIR}/include")
+  file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include")
+endif()
 
-#
-# Executables / Testprograms
-#
-IF(build_exe)
-
-set(xhcfftest)
-set(pvtest)
-
-add_subdirectory("testprog")
-
-add_executable(
-  ${PROJECT_NAME}-test2
-  "${pvtest}"
-)
-set_target_properties(
-  ${PROJECT_NAME}-test2
-  PROPERTIES
-  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include
-  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-  OUTPUT_NAME "pv-tester"
-)
-target_link_libraries(
-  ${PROJECT_NAME}-test2
-  PRIVATE
-  "lib${PROJECT_NAME}.a"
-)
-
-add_executable(
-  ${PROJECT_NAME}-test1
-  "${xhcfftest}"
-)
-set_target_properties(
-  ${PROJECT_NAME}-test1
-  PROPERTIES
-  Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include
-  RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-  OUTPUT_NAME "xhcff-tester"
-)
-target_link_libraries(
-  ${PROJECT_NAME}-test1
-  PRIVATE
-  "lib${PROJECT_NAME}.a"
-)
-
-
-ENDIF()
-
-#
+###############################################################################
+##################### Install and Export Instructions #########################
+###############################################################################
 # Export targets for other projects
-#
 add_library("${PROJECT_NAME}" INTERFACE)
-target_link_libraries("${PROJECT_NAME}" INTERFACE   "lib${PROJECT_NAME}.a")
+target_link_libraries("${PROJECT_NAME}" INTERFACE "${PROJECT_NAME}-lib")
 install(
   TARGETS
   "${PROJECT_NAME}"
-  "lib${PROJECT_NAME}.a"
+  "${PROJECT_NAME}-lib"
   EXPORT
   "${PROJECT_NAME}-targets"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -180,5 +133,21 @@ install(
   "${CMAKE_CURRENT_BINARY_DIR}/include/"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${module-dir}"
 )
+# Package license files
+install(
+  FILES
+  "COPYING"
+  "COPYING.LESSER"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}"
+)
 
+
+###############################################################################
+################################## Testing ####################################
+###############################################################################
+# add the testsuite
+if (WITH_TESTS)
+  enable_testing()
+  add_subdirectory("test")
+endif()
 
