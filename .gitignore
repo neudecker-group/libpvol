@@ -13,5 +13,7 @@ config/
 github_bin/
 build_majestix
 build_commands
+build
 _build*
+subprojects/test-drive
 bin/

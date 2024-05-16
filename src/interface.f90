@@ -21,21 +21,22 @@
 !> 1. declare "use xhcff_interface" in your code
 !> 2. Create a xhcff_calculator
 !> 3. Initialize it with the %init procedure (returns the first XHCFF grad)
-!> 4. Obtain the XHCFF grad with teh %singlepoint procedure
+!> 4. Obtain the XHCFF grad with the %singlepoint procedure
 
-module xhcff_interface
+module interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_engrad
+  use pv_engrad
   use xhcff_surface_module
   use xhcff_surface_lebedev,only:gridSize
   implicit none
   private
 
 !> routines/datatypes that can be seen outside the module
-  public :: xhcff_calculator
+  public :: xhcfflib_calculator
 
 !> Main class for interface
-  type :: xhcff_calculator
+  type :: xhcfflib_calculator
 
     !> System data
     integer :: nat                   !> number of atoms
@@ -44,7 +45,10 @@ module xhcff_interface
     real(wp) :: pressure_au          !> pressure in a.u.
     real(wp) :: pressure_gpa         !> pressure in GPa
 
-    ! IO stuff
+    !> Modelflag
+    integer :: model    !> model flag, can be XHCFF(0) or PV (1)
+
+    !> IO stuff
     logical :: verbose
     integer :: printlevel !> amount of printout
     integer :: myunit !> filehandling unit
@@ -69,7 +73,7 @@ module xhcff_interface
     procedure :: reset => xhcff_data_deallocate
     procedure :: info => print_xhcff_results
     procedure :: singlepoint => xhcff_singlepoint
-  end type xhcff_calculator
+  end type xhcfflib_calculator
 
 !========================================================================================!
 !========================================================================================!
@@ -81,7 +85,7 @@ contains  !> MODULE PROCEDURES START HERE
     implicit none
 
     !> DATA CONTAINER
-    class(xhcff_calculator),intent(inout) :: self
+    class(xhcfflib_calculator),intent(inout) :: self
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
@@ -92,7 +96,6 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(out),optional  :: iostat
     
     real(wp),parameter :: geotol = 1.0e-7_wp
-
 
     !> reset output data elements
     self%energy = 0.0_wp
@@ -108,7 +111,7 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
-    !> update coordinates
+    !> check if coordinates are dubious
     if (nat /= self%nat.or.any(at .ne. self%at)) then
       if (self%io == 0) then
         self%io = 1
@@ -126,20 +129,27 @@ contains  !> MODULE PROCEDURES START HERE
       return
     end if
 
-    !!> check if we need to update the geometry?
-    !if(any(abs(self%xyz(:,:) - xyz(:,:)) > geotol))then
+
+    !!> update geometry if changed
+    if(any(abs(self%xyz(:,:) - xyz(:,:)) > geotol)) then
       self%xyz(:,:) = xyz(:,:)
 
       !> update surface calculator
       call self%surf%update(at,xyz)
-    !endif
+    end if
 
     !> singlpoint + gradient calculation
-    call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
-
-    if (self%verbose) then
-      call print_xhcff_results(self)
+    if (self%model .eq. 0) then
+      call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
+    else if(self%model .eq. 1) then
+      call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
+    else
+      self%io = 9
+      if(self%verbose) call print_error(self%myunit,self%io)
+      return
     end if
+
+    if (self%verbose) call print_xhcff_results(self)
 
     !> return singlepoint results
     energy = self%energy
@@ -152,7 +162,7 @@ contains  !> MODULE PROCEDURES START HERE
 
 !========================================================================================!
   subroutine print_xhcff_results(self,iunit)
-    class(xhcff_calculator),intent(in) :: self
+    class(xhcfflib_calculator),intent(in) :: self
     integer,intent(in),optional :: iunit !> file handle (usually output_unit=6)
     integer :: myunit,i
     character(len=*),parameter :: outfmt = '(2x,a,f23.12,1x,a)'
@@ -171,9 +181,10 @@ contains  !> MODULE PROCEDURES START HERE
 
     if(self%printlevel >= 1) then
       write (myunit,*) '================================================================'
-      write (myunit,*) '====================== XHCFF Results ==========================='
+      write (myunit,*) '===================== LIBXHCFF Results ========================='
       write (myunit,*) '================================================================'
 
+      write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Model   ",self%model
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
       !> surface printout
@@ -182,12 +193,13 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
-    !> always print Volume
+    !> always print Volume and energy
     write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%volume ,"/ Bohr ** 3  "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Energy   ",self%energy ,"/ Eh "
 
     if(self%printlevel >= 2) then
       write (myunit,*)
-      write (myunit,'(a)') '> XHCFF Gradient ( Eh/a0 ):'
+      write (myunit,'(a)') '> Gradient ( Eh/a0 ):'
       do i = 1,self%nat
         write (myunit,'(2x,i3,3x,3f16.6)'),i,self%gradient(1:3,i)
       end do
@@ -195,15 +207,16 @@ contains  !> MODULE PROCEDURES START HERE
     end subroutine print_xhcff_results
 
 !========================================================================================!
-  subroutine xhcff_initialize(self,nat,at,xyz,pressure, &
+  subroutine xhcff_initialize(self,nat,at,xyz,pressure,model, &
   &                 gridpts,proberad,scaling,verbose,iunit,vdwSet,printlevel,iostat)
     character(len=*),parameter :: source = 'xhcff_initialize'
-    class(xhcff_calculator),intent(inout) :: self
+    class(xhcfflib_calculator),intent(inout) :: self
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
     real(wp),intent(in) :: xyz(3,nat)        !> coordinates in Bohr
     real(wp),intent(in) :: pressure          !> pressure in GPa
+    character(len= *), intent(in) :: model   !> Modelflag, can be XHCFF or PV 
     integer,intent(in),optional :: gridpts   !> gridpoints per atom to construct lebedev grid
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in angstrom
     real(wp),intent(in),optional :: scaling  !> scaling of vdw radii to simulate sas
@@ -279,7 +292,12 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
-    if (self%verbose) write (self%myunit,'(a)') '> XHCFF: calling surface calculator'
+
+    if ((model /= 'XHCFF') .and. (model /= 'PV')) then
+        io = 9
+    end if
+
+    if (self%verbose) write (self%myunit,'(a)') '> ', self%model, ': calling surface calculator'
 
     !> surface calculator
     if (io == 0) then
@@ -300,6 +318,12 @@ contains  !> MODULE PROCEDURES START HERE
     self%at = at
     allocate (self%xyz(3,nat))
     self%xyz = xyz
+    if (model == 'XHCFF') then
+      self%model = 0
+    else if (model == 'PV') then
+      self%model = 1
+    end if
+
 
     !> init calc storage
     self%energy = 0.0_wp
@@ -326,7 +350,7 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
   subroutine xhcff_data_deallocate(self)
     implicit none
-    class(xhcff_calculator) :: self
+    class(xhcfflib_calculator) :: self
 
     self%energy = 0.0_Wp
     self%volume = 0.0_wp
@@ -338,6 +362,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%myunit = 6
     self%is_initialized = .false.
     self%bondi = .false.
+    self%model = 2
 
     if (allocated(self%surf)) deallocate (self%surf)
     if (allocated(self%gradient)) deallocate (self%gradient)
@@ -378,11 +403,15 @@ contains  !> MODULE PROCEDURES START HERE
 
     case(8)
       write (myunit,*) 'Scaling cannot be negative!'
-    end select
+
+    case(9)
+      write(myunit,*) 'Model is not implemented'
+  
+  end select
 
   end subroutine print_error
 
 !========================================================================================!
 !========================================================================================!
-end module xhcff_interface
+end module interface
 

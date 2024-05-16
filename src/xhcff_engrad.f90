@@ -62,7 +62,6 @@ contains  !> MODULE PROCEDURES START HERE
     !allocate (fvecs(3,ntess,nat))
     gradient(:,:) = 0.0_wp
     volume = 0.0_wp
-
     !> Evaluate gradient via eq. 3 and eq. 4
 
     do iat = 1,nat

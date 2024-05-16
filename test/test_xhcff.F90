@@ -1,9 +1,8 @@
 module test_xhcff
   use testdrive,only:new_unittest,unittest_type,error_type,check,test_failed
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use xhcff_interface
+  use interface
   use xhcff_surface_module
-  use xhcff_engrad
   use xhcff_type_timer
   implicit none
   private
@@ -45,7 +44,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(xhcff_calculator) :: xhcff
+    type(xhcfflib_calculator) :: xhcff
 !&<
     real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
@@ -87,7 +86,7 @@ contains  !> Unit tests for XHCFF calculations
     allocate (grad(3,nat),source=0.0_wp)
 
     !> calculation
-    call xhcff%init(nat,at,xyz,p,proberad=probe,verbose=.false.,printlevel=2)
+    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,verbose=.false.,printlevel=2)
     call xhcff%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !write (*,'(F25.15)') energy
     !write (*,'(3(F20.15,"_wp,")," &")') grad
@@ -119,7 +118,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(xhcff_calculator) :: xhcff
+    type(xhcfflib_calculator) :: xhcff
 !&<
     real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
@@ -161,7 +160,7 @@ contains  !> Unit tests for XHCFF calculations
     allocate (grad(3,nat),source=0.0_wp)
 
     !> calculation
-    call xhcff%init(nat,at,xyz,p,proberad=probe,gridpts=5294,vdwSet=1, &
+    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,gridpts=5294,vdwSet=1, &
     &    verbose=.false.,printlevel=2)
     call xhcff%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !write (*,'(F25.15)') energy
@@ -194,7 +193,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io,i,j,ntimes
     real(wp) :: p,probe
-    type(xhcff_calculator) :: xhcff
+    type(xhcfflib_calculator) :: xhcff
     type(xhcff_timer) :: timer
     character(len=40) :: atmp
     logical :: speedup
@@ -255,7 +254,7 @@ contains  !> Unit tests for XHCFF calculations
       call xhcff%reset
       grad = 0.0_wp
       do j = 1,20
-        call xhcff%init(nat,at,xyz,p,proberad=probe,gridpts=5294,vdwSet=1, &
+        call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,gridpts=5294,vdwSet=1, &
         &    verbose=.false.,printlevel=2)
         call xhcff%singlepoint(nat,at,xyz,energy,grad,iostat=io)
         !write (*,'(F25.15)') energy
@@ -326,7 +325,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(pv_calculator) :: pv
+    type(xhcfflib_calculator) :: pv
 
 !&<
     real(wp),parameter :: e_ref = 1053.433399736551337_wp
@@ -363,13 +362,13 @@ contains  !> Unit tests for XHCFF calculations
     allocate (at(nat),xyz(3,nat))
     at = testat
     xyz = testxyz
-    p = 10.0_wp     !> pressure in GPa
+    p =  1.0_wp/3.4e-5_wp    !> set pressure to 1 a.u., to directly compare volume gradient
     probe = 0.0_wp  !> Probe radius
     energy = 0.0_wp
     allocate (grad(3,nat),source=0.0_wp)
 
     !> calculation
-    call pv%init(nat,at,xyz,1.0_wp/3.4e-5_wp,gridpts=5294, &
+    call pv%init(nat,at,xyz,p,'PV',gridpts=5294, &
     &    proberad=probe,vdwSet=1,verbose=.false.,printlevel=2)
     call pv%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !call pv%info()
@@ -404,7 +403,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io,i,j
     real(wp) :: p,probe,step,bw,bw2,fw,fw2
-    type(pv_calculator) :: pv
+    type(xhcfflib_calculator) :: pv
     real(wp),allocatable :: gradient(:,:),g_ref(:,:),stencil(:,:)
 !&<
     real(wp),parameter :: e_ref = 1053.415994538545_wp
@@ -415,14 +414,14 @@ contains  !> Unit tests for XHCFF calculations
     allocate (at(nat),xyz(3,nat))
     at = testat
     xyz = testxyz
-    p = 10.0_wp     !> pressure in GPa
+    p =  1.0_wp/3.4e-5_wp    !> set pressure to 1 a.u., to directly compare volume gradient
     probe = 0.0_wp  !> Probe radius
     energy = 0.0_wp
     allocate (grad(3,nat),source=0.0_wp)
     allocate (gradient(3,nat),g_ref(3,nat),stencil(3,nat),source=0.0_wp)
 
     !> calculation
-    call pv%init(nat,at,xyz,1.0_wp/3.4e-5_wp,gridpts=974, &
+    call pv%init(nat,at,xyz,p,'PV',gridpts=974, &
     &    proberad=probe,vdwSet=1,verbose=.false.,printlevel=2)
     call pv%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !call pv%info()
