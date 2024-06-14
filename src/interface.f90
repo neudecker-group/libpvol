@@ -23,7 +23,7 @@
 !> 3. Initialize it with the %init procedure (returns the first XHCFF grad)
 !> 4. Obtain the XHCFF grad with the %singlepoint procedure
 
-module interface
+module xhcfflib_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_engrad
   use pv_engrad
@@ -184,7 +184,12 @@ contains  !> MODULE PROCEDURES START HERE
       write (myunit,*) '===================== LIBXHCFF Results ========================='
       write (myunit,*) '================================================================'
 
-      write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Model   ",self%model
+      if (self%model == 0) then
+        write (myunit,'(2x, a, t54, 1x, a)') "Model   " , '/ PV'
+      else
+        write (myunit,'(2x, a, t54, 1x, a)') "Model   " , '/ XHCFF'
+      end if
+
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
       !> surface printout
@@ -201,7 +206,7 @@ contains  !> MODULE PROCEDURES START HERE
       write (myunit,*)
       write (myunit,'(a)') '> Gradient ( Eh/a0 ):'
       do i = 1,self%nat
-        write (myunit,'(2x,i3,3x,3f16.6)'),i,self%gradient(1:3,i)
+        write (myunit,'(2x,i3,3x,3f16.6)') i,self%gradient(1:3,i)
       end do
     end if
     end subroutine print_xhcff_results
@@ -273,7 +278,7 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
-    !> (optional) selection of vdW radii
+    !> (optionmodelal) selection of vdW radii
     if (present(vdwSet).and.(io == 0)) then
       if (vdwSet == 1) then
         if (ANY(at > 18)) then
@@ -375,7 +380,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in) :: myunit,errcode
     integer :: i
 
-    write (myunit,*) 'Error in XHCFF module:'
+    write (myunit,*) 'Error in libxhcff module:'
     select case (errcode)
     case (1)
       write (myunit,*) 'was not initialized before calculation call!'
@@ -413,5 +418,5 @@ contains  !> MODULE PROCEDURES START HERE
 
 !========================================================================================!
 !========================================================================================!
-end module interface
+end module xhcfflib_interface
 

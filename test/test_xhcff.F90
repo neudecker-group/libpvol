@@ -1,7 +1,7 @@
 module test_xhcff
   use testdrive,only:new_unittest,unittest_type,error_type,check,test_failed
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use interface
+  use xhcfflib_interface
   use xhcff_surface_module
   use xhcff_type_timer
   implicit none
@@ -86,7 +86,7 @@ contains  !> Unit tests for XHCFF calculations
     allocate (grad(3,nat),source=0.0_wp)
 
     !> calculation
-    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,verbose=.false.,printlevel=2)
+    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,verbose=.true.,printlevel=2)
     call xhcff%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !write (*,'(F25.15)') energy
     !write (*,'(3(F20.15,"_wp,")," &")') grad
@@ -98,6 +98,7 @@ contains  !> Unit tests for XHCFF calculations
 
     if (any(abs(grad-g_ref) > thr2)) then
       call test_failed(error,"Gradient does not match reference")
+     call xhcff%info()
       print'(3es21.14)',grad
       print'("---")'
       print'(3es21.14)',g_ref
