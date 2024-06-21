@@ -26,9 +26,9 @@
 module xhcfflib_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_engrad
-  use pv_engrad
   use xhcff_surface_module
   use xhcff_surface_lebedev,only:gridSize
+  use libpv_calculator
   implicit none
   private
 
@@ -66,6 +66,7 @@ module xhcfflib_interface
     integer :: io = 1
 
     type(surface_calculator),allocatable :: surf
+    type(calculator),allocatable :: calculator
 
   contains
     procedure :: init => xhcff_initialize
@@ -141,8 +142,14 @@ contains  !> MODULE PROCEDURES START HERE
     !> singlpoint + gradient calculation
     if (self%model .eq. 0) then
       call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
+      energy = self%energy
+      gradient = self%gradient
     else if(self%model .eq. 1) then
-      call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
+      
+      call self%calculator%update(at,xyz)
+      energy = self%calculator%energy
+      gradient = self%calculator%grad
+      !call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
     else
       self%io = 9
       if(self%verbose) call print_error(self%myunit,self%io)
@@ -152,8 +159,8 @@ contains  !> MODULE PROCEDURES START HERE
     if (self%verbose) call print_xhcff_results(self)
 
     !> return singlepoint results
-    energy = self%energy
-    gradient = self%gradient
+    !energy = self%energy
+    !gradient = self%gradient
 
     if (present(iostat)) then
         iostat = 0
@@ -314,6 +321,9 @@ contains  !> MODULE PROCEDURES START HERE
         io = 4
       end if
     end if
+    allocate (self%calculator)
+    call self%calculator%setup(nat,at,xyz,self%model,pressure,.false.,surferr,ngrid=gridpts, &
+    &    probe=proberad,scaling=scaling,bondi=self%bondi)
 
     !> save input data
     self%pressure_gpa = pressure

@@ -23,13 +23,30 @@
 
 module pv_engrad
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use tesspoints,only:tesspts
-  use xhcff_surface_module
+ ! use tesspoints,only:tesspts
+ ! use xhcff_surface_module
   implicit none
   private
+  !> Smoothing dielectric function parameters
+  real(wp),parameter :: autoaa = 0.52917726_wp
+  real(wp),parameter :: aatoau = 1.0_wp/autoaa
+  real(wp),parameter :: w = 0.3_wp*aatoau
+  real(wp),parameter :: w3 = w*(w*w)
+  ! const part of eq 9
+  real(wp),parameter :: ah0 = 0.5_wp
+  ! const 2nd part of eq 9
+  real(wp),parameter :: ah1 = 3.0_wp/(4.0_wp*w)
+  ! const 3rd part of eq 6
+  real(wp),parameter :: ah3 = -1.0_wp/(4.0_wp*w3)
+
+  !> real space cut-offs
+  real(wp),parameter :: tolsesp = 1.e-6_wp
+
+  !> pi
+  real(wp),parameter :: pi = 3.14159265359
 
 !> routines/datatypes that can be seen outside the module
-  public :: pv_eg
+  public :: pv_egtest
 
 !========================================================================================!
 !========================================================================================!
@@ -38,59 +55,205 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
   !> pure gradient calculation
-  subroutine pv_eg(nat,at,xyz,pressure,surf,energy,gradient,volume)
-    implicit none
-    !> INPUT
-    integer,intent(in)  :: nat        !> number of atoms
-    integer,intent(in)  :: at(nat)    !> atom types
-    real(wp),intent(in) :: xyz(3,nat) !> Cartesian coordinates in Bohr
-    real(wp),intent(in) :: pressure   !> external pressure in au
-    type(surface_calculator) :: surf  !> surface information
 
-    !> OUTPUT
-    real(wp),intent(out) :: energy
-    real(wp),intent(out) :: gradient(3,nat)
-    real(wp),intent(out) :: volume !> volume in bohr ** 3
+  subroutine pv_egtest(nat, nnsas, nnlists, xyz, vdwsa, &
+        & wrp,trj2,angWeight,angGrid,pressure,area,volume,energy,grad)
+  !$  use omp_lib
+    
+    !> Number of atoms
+    integer,intent(in) :: nat
 
-    !> LOCAL
-    real(wp) :: xyzt(3),nvec(3) !> container for tesselation coords, normalvector
-    integer :: iat, it !> counters
-    integer  :: ntess  !> number of tesspoints per atom
-    real(wp) :: rdotn  !> dot product of normal an coordinate vector of tessera
+    !> Number of neighbours to consider
+    integer,intent(in) :: nnsas(:)
 
-    ntess = surf%tess(1)%n
-    gradient(:,:) = 0.0_wp
-    volume = 0.0_wp
+    !> Neighbourlist
+    integer,intent(in) :: nnlists(:,:)
 
-    !> Evaluate Volume via sentence of gauss
+    !> Cartesian coordinates
+    real(wp),intent(in) :: xyz(:,:)
 
+    !> Van-der-Waals radii including probe radius of solvent
+    real(wp),intent(in) :: vdwsa(:)
+
+    !> Radial weights for the numerical integration
+    real(wp),intent(in) :: wrp(:)
+
+    !> Radial smoothing function
+    real(wp),intent(in) :: trj2(:,:)
+
+    !> Angular weights for the numerical integration
+    real(wp),intent(in) :: angWeight(:)
+
+    !> Angular grid for each atom
+    real(wp),intent(in) :: angGrid(:,:)
+
+    real(wp),intent(in) :: pressure
+
+    !> Surface area 
+    real(wp),intent(out) :: area
+
+    real(wp),intent(out) :: volume
+
+    real(wp), intent(out) :: energy
+
+    !> Derivative of surface area w.r.t. cartesian coordinates
+    real(wp),intent(out) :: grad(:,:)
+
+    ! make output
+    !type(tesspts),intent(out) :: tess(:)
+
+    !real(wp) :: tj(3),tj2
+
+    integer :: iat,ip,jj,nnj,nni,nno
+    real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,drjj(3), voli, rdotn
+    real(wp),allocatable :: grds(:,:),grads(:,:),xyzt(:,:),areas(:), gradi(:,:)
+    integer,allocatable :: grdi(:)
+
+    area = 0.0_wp
+    volume =0.0_wp
+    !> allocate space for the gradient storage
+    allocate (grads(3,nat),source=0.0_wp)
+    allocate (gradi(3,nat),source=0.0_wp)
+    allocate (grds(3,maxval(nnsas)))
+    allocate (grdi(maxval(nnsas)))
+    allocate (xyzt(3,size(angGrid,2)))
+    allocate (areas(size(angGrid,2)))
+    !do iat = 1,nat
+    !  call tess(iat)%allocate(size(angGrid,2),nat)
+    !end do
+    !$omp parallel do default(none) shared(area, volume, grad) &
+    !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
+    !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
+    !$omp& voli, gradi, sasap, jj, nni, nnj, grdi, grds, drjj, rdotn)
     do iat = 1,nat
-      do it = 1,ntess
-        if (surf%tess(iat)%ap(it) /= 0) then
-        !> calc surface normals
-        xyzt = surf%tess(iat)%xyz(:,it)
-        nvec = xyzt - xyz(:,iat)
-        nvec = nvec / sqrt(nvec(1)**2+nvec(2)**2+nvec(3)**2)
-        !> dot product of position and normal vector
-        rdotn = nvec(1)*xyzt(1) + nvec(2)*xyzt(2) + nvec(3) * xyzt(3)
-        !> evaluate volume using the Gauß integral sentence
-        volume = volume + rdotn * surf%tess(iat)%ap(it) / 3.0_wp
-        
-        !> evaluate gradient
-        gradient(:,iat) = gradient(:,iat) + (nvec * surf%tess(iat)%ap(it)) / 3.0_wp
-        gradient = gradient + (rdotn * surf%tess(iat)%dadr(:,:,it)) / 3.0_wp
+
+      rsas = vdwsa(iat)
+      nno = nnsas(iat)
+
+      !> initialize storage
+      gradi = 0.0_wp
+      sasai = 0.0_wp
+      voli  = 0.0_wp
+
+      !> reset areas and xyzt
+      !areas = 0.0_wp
+      !xyzt(:,:) = 0.0_wp
+
+      !> atomic position
+      xyza(:) = xyz(:,iat)
+      !> radial atomic weight
+      wr = wrp(iat)
+
+      !> loop over grid points
+      do ip = 1,size(angGrid,2)
+        !> grid point position
+        xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
+
+        !> save gridpoint position
+        !xyzt(1:3,ip) = xyzp
+        !> atomic surface function at the grid point
+        !> compute the distance to the atom
+
+        call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, &
+           & sasap,grds,nni,grdi)
+        if (sasap .gt. tolsesp) then
+          !> numerical quadrature weight
+          wsa = angWeight(ip)*wr*sasap
+
+          !> accumulate the surface area, sum in eq 10
+          sasai = sasai+wsa
+
+          !> calculate and accumulate the volume fraction
+          rdotn = xyzp(1) * angGrid(1,ip) + xyzp(1) * angGrid(1,ip) + xyzp(1) * angGrid(1,ip)
+          voli = voli + rdotn * wsa
+
+          !> save area tesspoint
+          !areas(ip) = wsa*4.0_wp*pi
+
+          !> accumulate the surface gradient
+          do jj = 1,nni
+            nnj = grdi(jj)
+            drjj(:) = wsa*grds(:,jj)
+            !tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip) + drjj
+            !tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip) - drjj
+            grads(:,iat) = grads(:,iat)+drjj(:)
+            grads(:,nnj) = grads(:,nnj)-drjj(:)
+          end do
+          gradi(:,iat) = gradi(:,iat) + (angGrid(1,ip) * wsa)
+          gradi = gradi + (rdotn * grads)
         end if
       end do
+      !> finalize eq 10
+      area = area + sasai * 4.0_wp * pi
+      volume = volume + voli * 4.0_wp * pi / 3.0_wp
+      grad = grad + gradi * 4.0_wp * pi / 3.0_wp
+      !dsdrt(:,:,iat) = grads
+      !ess(iat)%n = size(angGrid,2)
+      !tess(iat)%ap = areas
+      !tess(iat)%xyz = xyzt
+    end do
+    !$omp end parallel do
+    energy = volume * pressure
+    grad = grad * pressure
+
+  end subroutine pv_egtest
+
+!========================================================================================!
+  pure subroutine compute_w_sp(nat,nnlists,trj2,vdwsa,xyza,nno,xyzp,sasap,grds, &
+        &                      nni,grdi)
+    implicit none
+
+    integer,intent(in)  :: nat
+    integer,intent(in)  :: nnlists(nno)
+    integer,intent(in)  :: nno
+    integer,intent(out) :: nni
+    real(wp),intent(in)  :: xyza(3,nat)
+    real(wp),intent(in)  :: xyzp(3)
+    real(wp),intent(out) :: sasap
+    real(wp),intent(out) :: grds(3,nno)
+    integer,intent(out) :: grdi(nno)
+    real(wp),intent(in)  :: trj2(2,nat)
+    real(wp),intent(in)  :: vdwsa(nat)
+
+    integer  :: i,ia
+    real(wp) :: tj(3),tj2,sqtj
+    real(wp) :: uj,uj3,ah3uj2
+    real(wp) :: sasaij,dsasaij
+
+    !> initialize storage
+    nni = 0
+    sasap = 1.0_wp
+    do i = 1,nno
+      ia = nnlists(i)
+      !> compute the distance to the atom
+      tj(:) = xyzp(:)-xyza(:,ia)
+      tj2 = tj(1)*tj(1)+tj(2)*tj(2)+tj(3)*tj(3)
+      !> if within the outer cut-off compute
+      if (tj2 .lt. trj2(2,ia)) then
+        if (tj2 .le. trj2(1,ia)) then
+          sasap = 0.0_wp
+          return
+        else
+          sqtj = sqrt(tj2)
+          !> r in eq. 9
+          uj = sqtj-vdwsa(ia)
+          ah3uj2 = ah3*uj*uj
+          dsasaij = ah1+3.0_wp*ah3uj2
+          !> eq 9, evaluation of atomic volume exclusion function
+          sasaij = ah0+(ah1+ah3uj2)*uj
+
+          !> accumulate the molecular surface, product in eq. 10
+          sasap = sasap*sasaij
+          !> compute the gradient wrt the neighbor
+          dsasaij = dsasaij/(sasaij*sqtj)
+          nni = nni+1
+          grdi(nni) = ia
+          grds(:,nni) = dsasaij*tj(:)
+        end if
+      end if
     end do
 
-    !> Energy is simply PV term
-    energy = volume * pressure
-    gradient = gradient * pressure
-
-!> Gradient
-    ! TODO implement
-
-  end subroutine pv_eg
+  end subroutine compute_w_sp
 
 !========================================================================================!
 !========================================================================================!
