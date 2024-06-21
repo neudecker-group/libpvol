@@ -86,7 +86,7 @@ contains  !> Unit tests for XHCFF calculations
     allocate (grad(3,nat),source=0.0_wp)
 
     !> calculation
-    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,verbose=.true.,printlevel=2)
+    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,verbose=.false.,printlevel=2)
     call xhcff%singlepoint(nat,at,xyz,energy,grad,iostat=io)
     !write (*,'(F25.15)') energy
     !write (*,'(3(F20.15,"_wp,")," &")') grad
