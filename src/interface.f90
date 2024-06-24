@@ -25,8 +25,8 @@
 
 module xhcfflib_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use xhcff_engrad
-  use xhcff_surface_module
+!  use xhcff_engrad
+ ! use xhcff_surface_module
   use xhcff_surface_lebedev,only:gridSize
   use libpv_calculator
   implicit none
@@ -54,9 +54,9 @@ module xhcfflib_interface
     integer :: myunit !> filehandling unit
 
     !> Output
-    real(wp) :: energy
-    real(wp) :: volume !> volume in bohr ** 3
-    real(wp),allocatable :: gradient(:,:)
+!    real(wp) :: energy
+!    real(wp) :: volume !> volume in bohr ** 3
+!    real(wp),allocatable :: gradient(:,:)
 
     !> controle variables
     logical :: is_initialized = .false.
@@ -65,7 +65,7 @@ module xhcfflib_interface
     !> Errorcode
     integer :: io = 1
 
-    type(surface_calculator),allocatable :: surf
+!    type(surface_calculator),allocatable :: surf
     type(calculator),allocatable :: grad_calculator
 
   contains
@@ -99,8 +99,8 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),parameter :: geotol = 1.0e-7_wp
 
     !> reset output data elements
-    self%energy = 0.0_wp
-    self%gradient(:,:) = 0.0_wp
+    !self%energy = 0.0_wp
+    !self%gradient(:,:) = 0.0_wp
 
     !> Error handling if not initialized
     if (.not.self%is_initialized) then
@@ -136,25 +136,27 @@ contains  !> MODULE PROCEDURES START HERE
       self%xyz(:,:) = xyz(:,:)
 
       !> update surface calculator
-      call self%surf%update(at,xyz)
+      !> -> singlepoint + gradient call
+      call self%grad_calculator%update(at,xyz)
     end if
 
-    !> singlpoint + gradient calculation
-    if (self%model .eq. 0) then
-      call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
-      energy = self%energy
-      gradient = self%gradient
-    else if(self%model .eq. 1) then
+    energy = self%grad_calculator%energy
+    gradient = self%grad_calculator%grad
+    !if (self%model .eq. 0) then
+     ! call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
+     ! energy = self%energy
+     ! gradient = self%gradient
+    !else if(self%model .eq. 1) then
       
-      call self%grad_calculator%update(at,xyz)
-      energy = self%grad_calculator%energy
-      gradient = self%grad_calculator%grad
+     ! call self%grad_calculator%update(at,xyz)
+     ! energy = self%grad_calculator%energy
+     ! gradient = self%grad_calculator%grad
       !call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
-    else
-      self%io = 9
-      if(self%verbose) call print_error(self%myunit,self%io)
-      return
-    end if
+    ! else
+    !  self%io = 9
+    !  if(self%verbose) call print_error(self%myunit,self%io)
+    !  return
+    !end if
 
     if (self%verbose) call print_xhcff_results(self)
 
@@ -200,20 +202,20 @@ contains  !> MODULE PROCEDURES START HERE
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
       !> surface printout
-      if (allocated(self%surf)) then
-        call self%surf%info(myunit)
+      if (allocated(self%grad_calculator)) then
+        call self%grad_calculator%info(myunit)
       end if
     end if
 
     !> always print Volume and energy
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%volume ,"/ Bohr ** 3  "
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Energy   ",self%energy ,"/ Eh "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%grad_calculator%volume ,"/ Bohr ** 3  "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Energy   ",self%grad_calculator%energy ,"/ Eh "
 
     if(self%printlevel >= 2) then
       write (myunit,*)
       write (myunit,'(a)') '> Gradient ( Eh/a0 ):'
       do i = 1,self%nat
-        write (myunit,'(2x,i3,3x,3f16.6)') i,self%gradient(1:3,i)
+        write (myunit,'(2x,i3,3x,3f16.6)') i,self%grad_calculator%grad(1:3,i)
       end do
     end if
     end subroutine print_xhcff_results
@@ -317,18 +319,8 @@ contains  !> MODULE PROCEDURES START HERE
 
     if (self%verbose) write (self%myunit,'(a)') '> ', self%model, ': calling surface calculator'
 
-    !> surface calculator
-    if (io == 0) then
-      allocate(self%surf)
-      call self%surf%setup(nat,at,xyz,.false.,surferr,ngrid=gridpts, &
-      &    probe=proberad,scaling=scaling,bondi=self%bondi)
 
-      if (surferr /= 0) then
-        io = 4
-      end if
-    end if
-
-    !> save input data
+      !> save input data
     self%pressure_gpa = pressure
     self%pressure_au = pressure*gpatoau
     self%nat = nat
@@ -337,17 +329,21 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (self%xyz(3,nat))
     self%xyz = xyz
 
-    if(model == 'PV') then
+    !> model calculator
+    if (io == 0) then
       allocate(self%grad_calculator)
       call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,.false.,surferr,ngrid=gridpts, &
       &    probe=proberad,scaling=scaling,bondi=self%bondi)
-end if
+      if (surferr /= 0) then
+        io = 4
+      end if
+    end if
 
     !> init calc storage
-    self%energy = 0.0_wp
-    self%volume = 0.0_wp
-    allocate (self%gradient(3,nat))
-    self%gradient = 0.0_wp
+    !self%energy = 0.0_wp
+    !elf%volume = 0.0_wp
+    !allocate (self%gradient(3,nat))
+    !self%gradient = 0.0_wp
 
     if ((io /= 0).and.pr) then
       call print_error(myunit,io)
@@ -370,8 +366,8 @@ end if
     implicit none
     class(xhcfflib_calculator) :: self
 
-    self%energy = 0.0_Wp
-    self%volume = 0.0_wp
+    !self%energy = 0.0_Wp
+    !self%volume = 0.0_wp
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
@@ -380,10 +376,10 @@ end if
     self%myunit = 6
     self%is_initialized = .false.
     self%bondi = .false.
-    self%model = 2
+    self%model = -1
 
-    if (allocated(self%surf)) deallocate (self%surf)
-    if (allocated(self%gradient)) deallocate (self%gradient)
+    !if (allocated(self%surf)) deallocate (self%surf)
+    !if (allocated(self%gradient)) deallocate (self%gradient)
     if (allocated(self%at)) deallocate (self%at)
     if (allocated(self%xyz)) deallocate (self%xyz)
     if (allocated(self%grad_calculator)) deallocate(self%grad_calculator)

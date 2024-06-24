@@ -27,9 +27,9 @@ module libpv_calculator
   use xhcff_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
   use xhcff_surface_search,only:bisectSearch
   use xhcff_surface_lebedev,only:gridSize,getAngGrid
-  use xhcff_surface_sasa,only:compute_numsa
-  use pv_engrad,only:pv_egtest
-
+  !use xhcff_surface_sasa,only:compute_numsa
+  use pv_engrad, only:pv_eg
+  use xhcff_engrad, only:xhcff_eg
   use xhcff_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
 
   !use tesspoints,only:tesspts
@@ -433,16 +433,19 @@ contains   !> MODULE PROCEDURES START HERE
        & self%lrcut,self%srcut,self%nnsas,self%nnlists,self%nnrad, &
        & self%nnlistr,self%ddpair,.false.)
 
-      ! reset gradient
+      ! reset gradient und energy
+       self%energy = 0.0_wp
       self%grad = 0.0_wp
 
     ! compute gradient and energy
-    if (self%model == 1) then
-      call pv_egtest(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
+    if (self%model == 0) then
+      call xhcff_eg(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
         & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
          & self%sasa, self%volume, self%energy, self%grad) 
-    else if (self%model == 0) then
-      ! call xhcff_egrad
+    else if (self%model == 1) then
+      call pv_eg(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
+      & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
+       & self%sasa, self%volume, self%energy, self%grad) 
     end if
     !call compute_numsa(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
     !   & self%wrp,self%trj2,self%angWeight,self%angGrid, &

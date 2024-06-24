@@ -46,7 +46,7 @@ module pv_engrad
   real(wp),parameter :: pi = 3.14159265359
 
 !> routines/datatypes that can be seen outside the module
-  public :: pv_egtest
+  public :: pv_eg
 
 !========================================================================================!
 !========================================================================================!
@@ -56,7 +56,7 @@ contains  !> MODULE PROCEDURES START HERE
 
   !> pure gradient calculation
 
-  subroutine pv_egtest(nat, nnsas, nnlists, xyz, vdwsa, &
+  subroutine pv_eg(nat, nnsas, nnlists, xyz, vdwsa, &
         & wrp,trj2,angWeight,angGrid,pressure,area,volume,energy,grad)
   !$  use omp_lib
     
@@ -198,9 +198,10 @@ contains  !> MODULE PROCEDURES START HERE
     energy = volume * pressure
     grad = grad * pressure
 
-  end subroutine pv_egtest
+  end subroutine pv_eg
 
 !========================================================================================!
+  !> evaluate switching function and area gradient
   pure subroutine compute_w_sp(nat,nnlists,trj2,vdwsa,xyza,nno,xyzp,sasap,grds, &
         &                      nni,grdi)
     implicit none

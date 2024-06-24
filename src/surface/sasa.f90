@@ -30,6 +30,7 @@ module xhcff_surface_sasa
   private
 
   public :: compute_numsa
+  public :: compute_w_sp
 
   !> Smoothing dielectric function parameters
   real(wp),parameter :: autoaa = 0.52917726_wp

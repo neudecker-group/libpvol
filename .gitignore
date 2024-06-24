@@ -9,7 +9,6 @@ cmake-build-debug/
 xhcfflib/
 CMakeFiles/
 .idea/
-config/
 github_bin/
 build_majestix
 build_commands
