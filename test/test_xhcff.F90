@@ -319,7 +319,6 @@ contains  !> Unit tests for XHCFF calculations
 
   subroutine test_xhcff_pv_sp(error)
     use coffeine
-    use pv_interface
     type(error_type),allocatable,intent(out) :: error
     real(wp) :: energy
     real(wp),allocatable :: xyz(:,:),grad(:,:)
@@ -397,7 +396,6 @@ contains  !> Unit tests for XHCFF calculations
 
   subroutine test_xhcff_pv_numgrad(error)
     use coffeine
-    use pv_interface
     type(error_type),allocatable,intent(out) :: error
     real(wp) :: energy
     real(wp),allocatable :: xyz(:,:),grad(:,:)
@@ -425,9 +423,9 @@ contains  !> Unit tests for XHCFF calculations
     call pv%init(nat,at,xyz,p,'PV',gridpts=974, &
     &    proberad=probe,vdwSet=1,verbose=.false.,printlevel=2)
     call pv%singlepoint(nat,at,xyz,energy,grad,iostat=io)
-    !call pv%info()
-    !write (*,'(F25.15)') energy
-    !write (*,'(3(F20.15,"_wp,")," &")') grad
+   ! call pv%info()
+   ! write (*,'(F25.15)') energy
+   ! write (*,'(3(F20.15,"_wp,")," &")') grad
     call check(error,io,0)
     if (allocated(error)) return
 

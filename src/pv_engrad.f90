@@ -148,7 +148,9 @@ contains  !> MODULE PROCEDURES START HERE
       do ip = 1,size(angGrid,2)
         !> grid point position
         xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
-
+        
+        !> reset area gradient storage for point
+        grads = 0.0_wp
         !> save gridpoint position
         !xyzt(1:3,ip) = xyzp
         !> atomic surface function at the grid point
@@ -164,7 +166,7 @@ contains  !> MODULE PROCEDURES START HERE
           sasai = sasai+wsa
 
           !> calculate and accumulate the volume fraction
-          rdotn = xyzp(1) * angGrid(1,ip) + xyzp(1) * angGrid(1,ip) + xyzp(1) * angGrid(1,ip)
+          rdotn = xyzp(1) * angGrid(1,ip) + xyzp(2) * angGrid(2,ip) + xyzp(3) * angGrid(3,ip)
           voli = voli + rdotn * wsa
 
           !> save area tesspoint
@@ -179,7 +181,7 @@ contains  !> MODULE PROCEDURES START HERE
             grads(:,iat) = grads(:,iat)+drjj(:)
             grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do
-          gradi(:,iat) = gradi(:,iat) + (angGrid(1,ip) * wsa)
+          gradi(:,iat) = gradi(:,iat) + (angGrid(:,ip) * wsa)
           gradi = gradi + (rdotn * grads)
         end if
       end do

@@ -117,17 +117,17 @@ module libpv_calculator
 
     !> Molecular pressure gradient
     real(wp), allocatable :: grad(:,:)
-    real(wp), allocatable :: energy
-    real(wp), allocatable :: surface
-    real(wp), allocatable :: volume
-    real(wp), allocatable :: pressure
+    real(wp) :: energy
+    real(wp) :: surface
+    real(wp) :: volume
+    real(wp) :: pressure
 !    real(wp),allocatable :: dsdrt(:,:,:)
 
 
     !> pressure model
     !> 0: PV
     !> 1  XHCFF
-    integer, allocatable :: model
+    integer :: model
 
     !> Shape descriptor
     real(wp) :: aDet
@@ -350,7 +350,7 @@ contains   !> MODULE PROCEDURES START HERE
       self%vdwr(iat) = vdwRad(izp)
     end do
 
-    !allocate (self%vdwsa(self%nat))
+    allocate (self%vdwsa(self%nat))
     allocate (self%trj2(2,self%nat))
     allocate (self%wrp(self%nat))
     !if (present(surfaceTension)) then
@@ -384,6 +384,9 @@ contains   !> MODULE PROCEDURES START HERE
     allocate (self%angWeight(gridSize(iang)))
     call getAngGrid(iang,self%angGrid,self%angWeight,ierr)
 
+    self%model = model
+    self%energy = 0.0_wp
+    self%pressure = pressure
     !allocate (self%tess(self%nat))
 
   end subroutine init_calculator
@@ -430,12 +433,15 @@ contains   !> MODULE PROCEDURES START HERE
        & self%lrcut,self%srcut,self%nnsas,self%nnlists,self%nnrad, &
        & self%nnlistr,self%ddpair,.false.)
 
+      ! reset gradient
+      self%grad = 0.0_wp
+
     ! compute gradient and energy
-    if (self%model == 0) then
- !     call pv_egtest(self%nat,self%nnlists,xyz,self%vdwsa, &
- !       & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
- !        & self%sasa, self%volume, self%energy, self%grad) 
-    else if (self%model == 1) then
+    if (self%model == 1) then
+      call pv_egtest(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
+        & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
+         & self%sasa, self%volume, self%energy, self%grad) 
+    else if (self%model == 0) then
       ! call xhcff_egrad
     end if
     !call compute_numsa(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &

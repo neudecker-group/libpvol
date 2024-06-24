@@ -66,7 +66,7 @@ module xhcfflib_interface
     integer :: io = 1
 
     type(surface_calculator),allocatable :: surf
-    type(calculator),allocatable :: calculator
+    type(calculator),allocatable :: grad_calculator
 
   contains
     procedure :: init => xhcff_initialize
@@ -146,9 +146,9 @@ contains  !> MODULE PROCEDURES START HERE
       gradient = self%gradient
     else if(self%model .eq. 1) then
       
-      call self%calculator%update(at,xyz)
-      energy = self%calculator%energy
-      gradient = self%calculator%grad
+      call self%grad_calculator%update(at,xyz)
+      energy = self%grad_calculator%energy
+      gradient = self%grad_calculator%grad
       !call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
     else
       self%io = 9
@@ -309,11 +309,17 @@ contains  !> MODULE PROCEDURES START HERE
         io = 9
     end if
 
+    if (model == 'XHCFF') then
+      self%model = 0
+    else if (model == 'PV') then
+      self%model = 1
+    end if
+
     if (self%verbose) write (self%myunit,'(a)') '> ', self%model, ': calling surface calculator'
 
     !> surface calculator
     if (io == 0) then
-      allocate (self%surf)
+      allocate(self%surf)
       call self%surf%setup(nat,at,xyz,.false.,surferr,ngrid=gridpts, &
       &    probe=proberad,scaling=scaling,bondi=self%bondi)
 
@@ -321,9 +327,6 @@ contains  !> MODULE PROCEDURES START HERE
         io = 4
       end if
     end if
-    allocate (self%calculator)
-    call self%calculator%setup(nat,at,xyz,self%model,pressure,.false.,surferr,ngrid=gridpts, &
-    &    probe=proberad,scaling=scaling,bondi=self%bondi)
 
     !> save input data
     self%pressure_gpa = pressure
@@ -333,12 +336,12 @@ contains  !> MODULE PROCEDURES START HERE
     self%at = at
     allocate (self%xyz(3,nat))
     self%xyz = xyz
-    if (model == 'XHCFF') then
-      self%model = 0
-    else if (model == 'PV') then
-      self%model = 1
-    end if
 
+    if(model == 'PV') then
+      allocate(self%grad_calculator)
+      call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,.false.,surferr,ngrid=gridpts, &
+      &    probe=proberad,scaling=scaling,bondi=self%bondi)
+end if
 
     !> init calc storage
     self%energy = 0.0_wp
@@ -383,6 +386,7 @@ contains  !> MODULE PROCEDURES START HERE
     if (allocated(self%gradient)) deallocate (self%gradient)
     if (allocated(self%at)) deallocate (self%at)
     if (allocated(self%xyz)) deallocate (self%xyz)
+    if (allocated(self%grad_calculator)) deallocate(self%grad_calculator)
   end subroutine xhcff_data_deallocate
 
 !======================================================================================!
