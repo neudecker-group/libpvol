@@ -19,12 +19,11 @@
 
 !>
 !> calculate PV term based on lebedev fused balls and analytical gradient
+!> calculate SAS implemented as eq 6-10 in 10.1021/acs.jctc.1c00471
 !>
 
 module pv_engrad
   use iso_fortran_env,only:wp => real64,stdout => output_unit
- ! use tesspoints,only:tesspts
- ! use xhcff_surface_module
   implicit none
   private
   !> Smoothing dielectric function parameters
@@ -99,11 +98,6 @@ contains  !> MODULE PROCEDURES START HERE
     !> Derivative of surface area w.r.t. cartesian coordinates
     real(wp),intent(out) :: grad(:,:)
 
-    ! make output
-    !type(tesspts),intent(out) :: tess(:)
-
-    !real(wp) :: tj(3),tj2
-
     integer :: iat,ip,jj,nnj,nni,nno
     real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,drjj(3), voli, rdotn
     real(wp),allocatable :: grds(:,:),grads(:,:),xyzt(:,:),areas(:), gradi(:,:)
@@ -111,6 +105,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     area = 0.0_wp
     volume =0.0_wp
+
     !> allocate space for the gradient storage
     allocate (grads(3,nat),source=0.0_wp)
     allocate (gradi(3,nat),source=0.0_wp)
@@ -118,9 +113,7 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (grdi(maxval(nnsas)))
     allocate (xyzt(3,size(angGrid,2)))
     allocate (areas(size(angGrid,2)))
-    !do iat = 1,nat
-    !  call tess(iat)%allocate(size(angGrid,2),nat)
-    !end do
+
     !$omp parallel do default(none) shared(area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
@@ -135,9 +128,6 @@ contains  !> MODULE PROCEDURES START HERE
       sasai = 0.0_wp
       voli  = 0.0_wp
 
-      !> reset areas and xyzt
-      !areas = 0.0_wp
-      !xyzt(:,:) = 0.0_wp
 
       !> atomic position
       xyza(:) = xyz(:,iat)
@@ -151,11 +141,8 @@ contains  !> MODULE PROCEDURES START HERE
         
         !> reset area gradient storage for point
         grads = 0.0_wp
-        !> save gridpoint position
-        !xyzt(1:3,ip) = xyzp
-        !> atomic surface function at the grid point
-        !> compute the distance to the atom
 
+        !> evaluate switching function and area gradient
         call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, &
            & sasap,grds,nni,grdi)
         if (sasap .gt. tolsesp) then
@@ -169,15 +156,10 @@ contains  !> MODULE PROCEDURES START HERE
           rdotn = xyzp(1) * angGrid(1,ip) + xyzp(2) * angGrid(2,ip) + xyzp(3) * angGrid(3,ip)
           voli = voli + rdotn * wsa
 
-          !> save area tesspoint
-          !areas(ip) = wsa*4.0_wp*pi
-
           !> accumulate the surface gradient
           do jj = 1,nni
             nnj = grdi(jj)
             drjj(:) = wsa*grds(:,jj)
-            !tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip) + drjj
-            !tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip) - drjj
             grads(:,iat) = grads(:,iat)+drjj(:)
             grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do
@@ -189,10 +171,6 @@ contains  !> MODULE PROCEDURES START HERE
       area = area + sasai * 4.0_wp * pi
       volume = volume + voli * 4.0_wp * pi / 3.0_wp
       grad = grad + gradi * 4.0_wp * pi / 3.0_wp
-      !dsdrt(:,:,iat) = grads
-      !ess(iat)%n = size(angGrid,2)
-      !tess(iat)%ap = areas
-      !tess(iat)%xyz = xyzt
     end do
     !$omp end parallel do
     energy = volume * pressure

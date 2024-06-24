@@ -25,8 +25,6 @@
 
 module xhcfflib_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-!  use xhcff_engrad
- ! use xhcff_surface_module
   use xhcff_surface_lebedev,only:gridSize
   use libpv_calculator
   implicit none
@@ -52,11 +50,6 @@ module xhcfflib_interface
     logical :: verbose
     integer :: printlevel !> amount of printout
     integer :: myunit !> filehandling unit
-
-    !> Output
-!    real(wp) :: energy
-!    real(wp) :: volume !> volume in bohr ** 3
-!    real(wp),allocatable :: gradient(:,:)
 
     !> controle variables
     logical :: is_initialized = .false.
@@ -98,10 +91,6 @@ contains  !> MODULE PROCEDURES START HERE
     
     real(wp),parameter :: geotol = 1.0e-7_wp
 
-    !> reset output data elements
-    !self%energy = 0.0_wp
-    !self%gradient(:,:) = 0.0_wp
-
     !> Error handling if not initialized
     if (.not.self%is_initialized) then
       if (self%io == 0) then
@@ -142,27 +131,8 @@ contains  !> MODULE PROCEDURES START HERE
 
     energy = self%grad_calculator%energy
     gradient = self%grad_calculator%grad
-    !if (self%model .eq. 0) then
-     ! call xhcff_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
-     ! energy = self%energy
-     ! gradient = self%gradient
-    !else if(self%model .eq. 1) then
-      
-     ! call self%grad_calculator%update(at,xyz)
-     ! energy = self%grad_calculator%energy
-     ! gradient = self%grad_calculator%grad
-      !call pv_eg(self%nat,self%at,self%xyz,self%pressure_au,self%surf,self%energy,self%gradient, self%volume)
-    ! else
-    !  self%io = 9
-    !  if(self%verbose) call print_error(self%myunit,self%io)
-    !  return
-    !end if
 
     if (self%verbose) call print_xhcff_results(self)
-
-    !> return singlepoint results
-    !energy = self%energy
-    !gradient = self%gradient
 
     if (present(iostat)) then
         iostat = 0
@@ -339,12 +309,6 @@ contains  !> MODULE PROCEDURES START HERE
       end if
     end if
 
-    !> init calc storage
-    !self%energy = 0.0_wp
-    !elf%volume = 0.0_wp
-    !allocate (self%gradient(3,nat))
-    !self%gradient = 0.0_wp
-
     if ((io /= 0).and.pr) then
       call print_error(myunit,io)
       write (myunit,'("Could not create force field calculator ",a)') source
@@ -366,8 +330,6 @@ contains  !> MODULE PROCEDURES START HERE
     implicit none
     class(xhcfflib_calculator) :: self
 
-    !self%energy = 0.0_Wp
-    !self%volume = 0.0_wp
     self%nat = 0
     self%pressure_au = 0
     self%pressure_gpa = 0
@@ -378,8 +340,6 @@ contains  !> MODULE PROCEDURES START HERE
     self%bondi = .false.
     self%model = -1
 
-    !if (allocated(self%surf)) deallocate (self%surf)
-    !if (allocated(self%gradient)) deallocate (self%gradient)
     if (allocated(self%at)) deallocate (self%at)
     if (allocated(self%xyz)) deallocate (self%xyz)
     if (allocated(self%grad_calculator)) deallocate(self%grad_calculator)

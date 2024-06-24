@@ -21,36 +21,26 @@
 !> at https://github.com/grimme-lab/xtb
 !================================================================================!
 
-!> Implementation of the XHCFF surface calculator
+!> Implementation of the libpv calculator
+!> this is mostly boiler plate code to set up the grid tesselation.
+!> the evaluation of the energy and gradient are carried out during the update call
+!> grad and energycalcs are implemented in the engrad routine respective to the model
 module libpv_calculator
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
   use xhcff_surface_search,only:bisectSearch
   use xhcff_surface_lebedev,only:gridSize,getAngGrid
-  !use xhcff_surface_sasa,only:compute_numsa
   use pv_engrad, only:pv_eg
   use xhcff_engrad, only:xhcff_eg
   use xhcff_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
 
-  !use tesspoints,only:tesspts
   implicit none
   private
 
   public :: calculator
-  !public :: getADet,addADetDeriv
   public :: lebedev
 
   type :: calculator
-
-    !> meta info
-    !character(len=:),allocatable :: solvent
-    !character(len=:),allocatable :: paramFile
-    !integer :: state
-    !real(wp) :: temperature
-    !real(wp) :: density
-    !real(wp) :: molarMass
-    !real(wp) :: bornOffset
-    !real(wp) :: ionStrength
 
     !> number of atoms
     integer :: nat
@@ -101,9 +91,6 @@ module libpv_calculator
     !> all pairs vector differences and magnitudes array
     real(wp),allocatable :: ddpair(:,:)
 
-    !> tesselation info for each atom
-!    type(tesspts),allocatable :: tess(:)
-
     !> Atom specific surface data
     real(wp),allocatable :: vdwsa(:)
     real(wp),allocatable :: wrp(:)
@@ -121,16 +108,11 @@ module libpv_calculator
     real(wp) :: surface
     real(wp) :: volume
     real(wp) :: pressure
-!    real(wp),allocatable :: dsdrt(:,:,:)
-
 
     !> pressure model
     !> 0: PV
     !> 1  XHCFF
     integer :: model
-
-    !> Shape descriptor
-    real(wp) :: aDet
 
     !> Probe radius in Bohr and Angstroem
     real(wp) :: probeRad_aa
@@ -167,21 +149,6 @@ module libpv_calculator
   real(wp),parameter :: ah0 = 0.5_wp
   real(wp),parameter :: ah1 = 3._wp/(4.0_wp*w)
   real(wp),parameter :: ah3 = -1._wp/(4.0_wp*w3)
-
-  !> Solvent density (g/cm^3) and molar mass (g/mol)
-  !real(wp),parameter :: molcm3toau = 8.92388e-2_wp
-
-  !> Surface tension (mN/m=dyn/cm)
-!  real(wp),parameter :: surfaceTension = 1.0e-5_wp
-!  real(wp),parameter :: mNmtokcal = 4.0305201015221386e-4_wp
-!  real(wp),parameter :: kcaltomNm = 1.0_wp/mNmtokcal
-!  real(wp),parameter :: automNm = autokcal*kcaltomNm
-
-  !> Surface tension (in au)
-!  real(wp),parameter :: gammas = 1.0e-5_wp
-
-  !> Salt screening
-!  real(wp),parameter :: kappaConst = 0.7897e-3_wp
 
   !> Surface calculation cutoffs
   real(wp),parameter :: lrcut = 35.0_wp*aatoau
@@ -260,6 +227,7 @@ contains   !> MODULE PROCEDURES START HERE
     self%probeRad_au = probeRad
     self%probeRad_aa = probeRad*autoaa
 
+    ! TODO make not optional
     vdwRad = vanDerWaalsRadD3
     if (present(Bondi)) then
       if (Bondi) then !> Use Bondi vdW rad instead of D3?
@@ -299,9 +267,6 @@ contains   !> MODULE PROCEDURES START HERE
 
     !> Van-der-Waals Radii
     real(wp),intent(in) :: vdwRad(:)
-
-    !> Surface tension scaling
-    !real(wp),intent(in),optional :: surfaceTension(:)
 
     !> Probe radius of the solvent
     real(wp),intent(in) :: probeRad
@@ -353,12 +318,7 @@ contains   !> MODULE PROCEDURES START HERE
     allocate (self%vdwsa(self%nat))
     allocate (self%trj2(2,self%nat))
     allocate (self%wrp(self%nat))
-    !if (present(surfaceTension)) then
-    !  allocate (self%gamsasa(self%nat))
-    !end if
-    !allocate (self%sasa(self%nat))
     allocate (self%grad(3,self%nat))
-    !allocate (self%dsdrt(3,self%nat,self%nat))
     do iat = 1,self%nat
       izp = num(iat)
       self%vdwsa(iat) = vdwRad(izp)+probeRad
@@ -372,9 +332,6 @@ contains   !> MODULE PROCEDURES START HERE
       self%wrp(iat) = self%wrp(iat)-(0.25/w+ &
          &    3.0_wp*ah3*(0.2_wp*r*r-0.5_wp*r*self%vdwsa(iat)+ &
          &            self%vdwsa(iat)*self%vdwsa(iat)/3.0_wp))*r*r*r
-      !if (allocated(self%gamsasa)) then
-      !  self%gamsasa(iat) = surfaceTension(izp)
-      !end if
     end do
     self%srcut = 2*(w+maxval(self%vdwsa))+rOffset
 
@@ -387,7 +344,6 @@ contains   !> MODULE PROCEDURES START HERE
     self%model = model
     self%energy = 0.0_wp
     self%pressure = pressure
-    !allocate (self%tess(self%nat))
 
   end subroutine init_calculator
 
@@ -406,12 +362,9 @@ contains   !> MODULE PROCEDURES START HERE
     if (allocated(self%trj2)) deallocate (self%trj2)
     if (allocated(self%wrp)) deallocate (self%wrp)
     if (allocated(self%gamsasa)) deallocate (self%gamsasa)
-!    if (allocated(self%sasa)) deallocate (self%sasa)
     if (allocated(self%grad)) deallocate (self%grad)
-    !if (allocated(self%dsdrt)) deallocate (self%dsdrt)
     if (allocated(self%angGrid)) deallocate (self%angGrid)
     if (allocated(self%angWeight)) deallocate (self%angWeight)
-    !if (allocated(self%tess)) deallocate (self%tess)
 
   end subroutine deallocate_calculator
 
@@ -447,132 +400,8 @@ contains   !> MODULE PROCEDURES START HERE
       & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
        & self%sasa, self%volume, self%energy, self%grad) 
     end if
-    !call compute_numsa(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
-    !   & self%wrp,self%trj2,self%angWeight,self%angGrid, &
-    !   & self%sasa,self%grad)
-
-    ! contract surface gradient (if we have the surface tension)
-    !if (allocated(self%gamsasa)) then
-    !  call gemv(self%dsdrt,self%gamsasa,self%dsdr)
-    !  self%gsasa = dot(self%sasa,self%gamsasa)
-    !end if
 
   end subroutine update
-
-!=========================================================================================!
-  !subroutine getADet(nAtom,xyz,rad,aDet)
-
-    !> Number of atoms
-!    integer,intent(in) :: nAtom
-
-    !> Cartesian coordinates
-!    real(wp),intent(in) :: xyz(:,:)
-
-    !> Atomic radii
-!    real(wp),intent(in) :: rad(:)
-
-    !> Shape descriptor of the structure
-!    real(wp),intent(out) :: aDet
-
-!    integer :: iat
- !   real(wp) :: r2,rad2,rad3,totRad3,vec(3),center(3),inertia(3,3)
-  !  real(wp),parameter :: tof = 2.0_wp/5.0_wp,unity(3,3) = reshape(&
-   !    & [1.0_wp,0.0_wp,0.0_wp,0.0_wp,1.0_wp,0.0_wp,0.0_wp,0.0_wp,1.0_wp], &
-  !     & [3,3])
-
-!    totRad3 = 0.0_wp
-!    center(:) = 0.0_wp
-!    do iat = 1,nAtom
-!      rad2 = rad(iat)*rad(iat)
-!      rad3 = rad2*rad(iat)
-!      totRad3 = totRad3+rad3
-!      center(:) = center+xyz(:,iat)*rad3
-!    end do
-!    center = center/totRad3
-!
-!    inertia(:,:) = 0.0_wp
-!    do iat = 1,nAtom
-!      rad2 = rad(iat)*rad(iat)
-!      rad3 = rad2*rad(iat)
-!      vec(:) = xyz(:,iat)-center
-!      r2 = sum(vec**2)
-!      inertia(:,:) = inertia+rad3*((r2+tof*rad2)*unity &
-!         & -spread(vec,1,3)*spread(vec,2,3))
-!    end do
-
-!    aDet = sqrt(matDet3x3(inertia)**(1.0_wp/3.0_wp)/(tof*totRad3))
-
-!  end subroutine getADet
-
-!=========================================================================================!
-!  subroutine addADetDeriv(nAtom,xyz,rad,kEps,qvec,gradient)
-
-    !> Number of atoms
-!    integer,intent(in) :: nAtom
-
-    !> Cartesian coordinates
-!    real(wp),intent(in) :: xyz(:,:)
-
-    !> Atomic radii
-!    real(wp),intent(in) :: rad(:)
-
-!    real(wp),intent(in) :: kEps
-!    real(wp),intent(in) :: qvec(:)
-
-    !> Molecular gradient
-!    real(wp),intent(inout) :: gradient(:,:)
-
-!    integer :: iat
-!    real(wp) :: r2,rad2,rad3,totRad3,vec(3),center(3),inertia(3,3),aDet
-!    real(wp) :: aDeriv(3,3),qtotal
-!    real(wp),parameter :: tof = 2.0_wp/5.0_wp,unity(3,3) = reshape(&
-!       & [1.0_wp,0.0_wp,0.0_wp,0.0_wp,1.0_wp,0.0_wp,0.0_wp,0.0_wp,1.0_wp], &
-!       & [3,3])
-
-!    qtotal = 0.0_wp
-!    totRad3 = 0.0_wp
-!    center(:) = 0.0_wp
-!    do iat = 1,nAtom
-!      rad2 = rad(iat)*rad(iat)
-!      rad3 = rad2*rad(iat)
-!      totRad3 = totRad3+rad3
-!      center(:) = center+xyz(:,iat)*rad3
-!      qtotal = qtotal+qvec(iat)
-!    end do
-!    center = center/totRad3
-
-!    inertia(:,:) = 0.0_wp
-!    do iat = 1,nAtom
-!      rad2 = rad(iat)*rad(iat)
-!      rad3 = rad2*rad(iat)
-!      vec(:) = xyz(:,iat)-center
-!      r2 = sum(vec**2)
-!      inertia(:,:) = inertia+rad3*((r2+tof*rad2)*unity &
-!         & -spread(vec,1,3)*spread(vec,2,3))
-!    end do
-!    aDet = sqrt(matDet3x3(inertia)**(1.0_wp/3.0_wp)/(tof*totRad3))
-
-!    aDeriv(:,:) = reshape([&
-!       & inertia(1,1)*(inertia(2,2)+inertia(3,3))-inertia(1,2)**2-inertia(1,3)**2, &
-!       & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), & ! xy
-!       & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), & ! xz
-!       & inertia(1,2)*inertia(3,3)-inertia(1,3)*inertia(2,3), & ! xy
-!       & inertia(2,2)*(inertia(1,1)+inertia(3,3))-inertia(1,2)**2-inertia(2,3)**2, &
-!       & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), & ! yz
-!       & inertia(1,3)*inertia(2,2)-inertia(1,2)*inertia(3,2), & ! xz
-!       & inertia(1,1)*inertia(2,3)-inertia(1,2)*inertia(1,3), & ! yz
-!       & inertia(3,3)*(inertia(1,1)+inertia(2,2))-inertia(1,3)**2-inertia(2,3)**2],&
-!       & shape=[3,3])*(250.0_wp/(48.0_wp*totRad3**3*aDet**5)) &
-!       & *(-0.5_wp*kEps*qtotal**2/aDet**2)
-
-!    do iat = 1,nAtom
-!      rad2 = rad(iat)*rad(iat)
-!      rad3 = rad2*rad(iat)
-!      vec(:) = xyz(:,iat)-center
-!      gradient(:,iat) = gradient(:,iat)+rad3*matmul(aderiv,vec)
- !   end do
-
-!  end subroutine addADetDeriv
 
 !=========================================================================================!
 !> setup a pairlist and compute pair distances of all neighbors

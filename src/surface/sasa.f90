@@ -22,6 +22,7 @@
 !================================================================================!
 
 !> Non-polar solvent accessible surface area model
+!> original implementation to extract tess information. keep only as template/legacy
 !> calculate SAS implemented as eq 6-10 in 10.1021/acs.jctc.1c00471
 module xhcff_surface_sasa
   use iso_fortran_env,only:wp => real64

@@ -22,6 +22,7 @@
 !================================================================================!
 
 !> Implementation of the XHCFF surface calculator
+!> legacy, not needed anymore. 
 module xhcff_surface_module
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_surface_math_wrapper,only:matDet3x3,dot,gemv,symv

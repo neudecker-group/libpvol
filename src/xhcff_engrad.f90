@@ -19,12 +19,11 @@
 
 !>
 !> calculate xhcff gradient as desribed in 10.1063/5.0024671
+!> calculate SAS implemented as eq 6-10 in 10.1021/acs.jctc.1c00471
 !>
 
 module xhcff_engrad
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  !use tesspoints,only:tesspts
-  !use xhcff_surface_module
   implicit none
   private
   
@@ -99,27 +98,14 @@ contains  !> MODULE PROCEDURES START HERE
     !> Derivative of surface area w.r.t. cartesian coordinates
     real(wp),intent(out) :: grad(:,:)
 
-    ! make output
-    !type(tesspts),intent(out) :: tess(:)
-
-    !real(wp) :: tj(3),tj2
-
     integer :: iat,ip,nno
     real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa, voli, rdotn, trcorr(3)
     real(wp),allocatable :: gradi(:,:)
 
     area = 0.0_wp
     volume =0.0_wp
-    !> allocate space for the gradient storage
-    !allocate (grads(3,nat),source=0.0_wp)
     allocate (gradi(3,nat),source=0.0_wp)
-    !allocate (grds(3,maxval(nnsas)))
-    !allocate (grdi(maxval(nnsas)))
-    !allocate (xyzt(3,size(angGrid,2)))
-    !allocate (areas(size(angGrid,2)))
-    !do iat = 1,nat
-    !  call tess(iat)%allocate(size(angGrid,2),nat)
-    !end do
+
     !$omp parallel do default(none) shared(area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, sasai, xyza, wr, ip, xyzp, wsa, voli, gradi, sasap, rdotn)
@@ -133,12 +119,9 @@ contains  !> MODULE PROCEDURES START HERE
       sasai = 0.0_wp
       voli  = 0.0_wp
 
-      !> reset areas and xyzt
-      !areas = 0.0_wp
-      !xyzt(:,:) = 0.0_wp
-
       !> atomic position
       xyza(:) = xyz(:,iat)
+
       !> radial atomic weight
       wr = wrp(iat)
 
@@ -147,15 +130,10 @@ contains  !> MODULE PROCEDURES START HERE
         !> grid point position
         xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
         
-        !> reset area gradient storage for point
-!        grads = 0.0_wp
-        !> save gridpoint position
-        !xyzt(1:3,ip) = xyzp
         !> atomic surface function at the grid point
-        !> compute the distance to the atom
-
         call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, sasap)
         if (sasap .gt. tolsesp) then
+
           !> numerical quadrature weight
           wsa = angWeight(ip)*wr*sasap
 
@@ -166,32 +144,15 @@ contains  !> MODULE PROCEDURES START HERE
           rdotn = xyzp(1) * angGrid(1,ip) + xyzp(2) * angGrid(2,ip) + xyzp(3) * angGrid(3,ip)
           voli = voli + rdotn * wsa
 
-          !> save area tesspoint
-          !areas(ip) = wsa*4.0_wp*pi
-
-          !> accumulate the surface gradient
-          !do jj = 1,nni
-           ! nnj = grdi(jj)
-           ! drjj(:) = wsa*grds(:,jj)
-            !tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip) + drjj
-            !tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip) - drjj
-           ! grads(:,iat) = grads(:,iat)+drjj(:)
-           ! grads(:,nnj) = grads(:,nnj)-drjj(:)
-          !end do
-          !> eq 3
+          !> eq 3, calculation of xhcff grad
           gradi(:,iat) = gradi(:,iat) + (angGrid(:,ip) * wsa)
-          !gradi = gradi + (rdotn * grads)
         end if
       end do
 
-      !> finalize to save multipilications
+      !> finalize calculation here to save multipilications
       area = area + sasai * 4.0_wp * pi
       volume = volume + voli * 4.0_wp * pi / 3.0_wp
       grad = grad + gradi * 4.0_wp * pi
-      !dsdrt(:,:,iat) = grads
-      !ess(iat)%n = size(angGrid,2)
-      !tess(iat)%ap = areas
-      !tess(iat)%xyz = xyzt
     end do
     !$omp end parallel do
 
@@ -218,12 +179,9 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in)  :: nat
     integer,intent(in)  :: nnlists(nno)
     integer,intent(in)  :: nno
-    !integer,intent(out) :: nni
     real(wp),intent(in)  :: xyza(3,nat)
     real(wp),intent(in)  :: xyzp(3)
     real(wp),intent(out) :: sasap
-    !real(wp),intent(out) :: grds(3,nno)
-    !integer,intent(out) :: grdi(nno)
     real(wp),intent(in)  :: trj2(2,nat)
     real(wp),intent(in)  :: vdwsa(nat)
 
@@ -233,7 +191,6 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp) :: sasaij
 
     !> initialize storage
-    !nni = 0
     sasap = 1.0_wp
     do i = 1,nno
       ia = nnlists(i)
@@ -250,17 +207,11 @@ contains  !> MODULE PROCEDURES START HERE
           !> r in eq. 9
           uj = sqtj-vdwsa(ia)
           ah3uj2 = ah3*uj*uj
-          !dsasaij = ah1+3.0_wp*ah3uj2
           !> eq 9, evaluation of atomic volume exclusion function
           sasaij = ah0+(ah1+ah3uj2)*uj
 
           !> accumulate the molecular surface, product in eq. 10
           sasap = sasap*sasaij
-          !> compute the gradient wrt the neighbor
-          !dsasaij = dsasaij/(sasaij*sqtj)
-          !nni = nni+1
-          !grdi(nni) = ia
-          !grds(:,nni) = dsasaij*tj(:)
         end if
       end if
     end do
