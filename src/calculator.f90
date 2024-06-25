@@ -171,7 +171,7 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_engine(self,nat,at,xyz,model,pressure,pr,ierr,ngrid,probe,scaling,Bondi)
+  subroutine setup_engine(self,nat,at,xyz,model,pressure,probe,Bondi,pr,ierr,ngrid,scaling)
     !> Error source
     character(len=*),parameter :: source = 'setup_engine'
 
@@ -193,19 +193,19 @@ contains   !> MODULE PROCEDURES START HERE
     !> printout flag
     logical,intent(in) :: pr
 
+    !> (optional) scaling factor for vdw radii
+    real(wp),intent(in) :: probe
+    !> (optional) use Bondi vdW radii instead of D3
+    logical,intent(in) :: Bondi
+
     !> Error flag
     integer,intent(inout) :: ierr
     !> (optional) number of Lebedev grid points
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
-    real(wp),intent(in),optional :: probe
-    !> (optional) scaling factor for vdw radii
     real(wp),intent(in),optional :: scaling
-    !> (optional) use Bondi vdW radii instead of D3
-    logical,intent(in),optional :: Bondi
 
     !> LOCAL
-    real(wp) :: probeRad
     integer :: nAng
     real(wp),allocatable :: vdwRad(:)
 
@@ -217,22 +217,15 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
     !> default setting for probe radius
-    if (present(probe)) then
-      probeRad = probe*aatoau
-    else
-      !> 1.5 Angstroem is a typical value for the water molecule as a probe
-      !> TODO: move to more accessible spot
-      probeRad = 1.5_wp*aatoau
-    end if
-    self%probeRad_au = probeRad
-    self%probeRad_aa = probeRad*autoaa
+    self%probeRad_au = probe
+    self%probeRad_aa = probe*autoaa
 
     ! TODO make not optional
     vdwRad = vanDerWaalsRadD3
-    if (present(Bondi)) then
-      if (Bondi) then !> Use Bondi vdW rad instead of D3?
+    if (Bondi) then
         vdwRad = vanDerWaalsRadBondi
-      end if
+    else
+      vdwRad = vanDerWaalsRadD3
     end if
 
     if (present(scaling)) then
@@ -240,7 +233,7 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
     !> call init_surface_calculator.
-    call self%init(at,vdwRad,probeRad,ierr,lrcut,srcut,nAng,pressure,model)
+    call self%init(at,vdwRad,self%probeRad_au,ierr,lrcut,srcut,nAng,pressure,model)
 
     !> call the update routine to set up neighbourlists and calculate the surface
     call self%update(at,xyz)

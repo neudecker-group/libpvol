@@ -40,6 +40,7 @@ module xhcfflib_interface
     integer :: nat                   !> number of atoms
     integer,allocatable :: at(:)     !> atom types
     real(wp),allocatable :: xyz(:,:) !> Cartesian coordinates in Bohr
+    real(wp) :: proberad             !> solvent probe radius in Angstrom
     real(wp) :: pressure_au          !> pressure in a.u.
     real(wp) :: pressure_gpa         !> pressure in GPa
 
@@ -253,10 +254,15 @@ contains  !> MODULE PROCEDURES START HERE
     if (present(proberad).and.(io == 0)) then
       if (proberad .lt. 0.0_wp) then
         io = 3
+      else
+        self%proberad = proberad
       end if
+    !> Default is 1.5 Angstrom, standard for water
+    else
+      self%proberad = 1.5
     end if
 
-    !> (optionmodelal) selection of vdW radii
+    !>  selection of vdW radii
     if (present(vdwSet).and.(io == 0)) then
       if (vdwSet == 1) then
         if (ANY(at > 18)) then
@@ -267,6 +273,9 @@ contains  !> MODULE PROCEDURES START HERE
         io = 6
         self%bondi = .false.
       end if
+      !> default
+    else
+      self%bondi = .false.
     end if
 
     if (present(scaling) .and. (io == 0)) then
@@ -301,8 +310,8 @@ contains  !> MODULE PROCEDURES START HERE
     !> model calculator
     if (io == 0) then
       allocate(self%grad_calculator)
-      call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,.false.,surferr,ngrid=gridpts, &
-      &    probe=proberad,scaling=scaling,bondi=self%bondi)
+      call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,self%proberad, self%Bondi,.false., &
+      & surferr,ngrid=gridpts,scaling=scaling)
       if (surferr /= 0) then
         io = 4
       end if
