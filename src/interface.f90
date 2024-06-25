@@ -26,7 +26,7 @@
 module xhcfflib_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_surface_lebedev,only:gridSize
-  use libpv_calculator
+  use libpv_surface_engine
   implicit none
   private
 
@@ -58,8 +58,7 @@ module xhcfflib_interface
     !> Errorcode
     integer :: io = 1
 
-!    type(surface_calculator),allocatable :: surf
-    type(calculator),allocatable :: grad_calculator
+    type(surface_engine),allocatable :: grad_calculator
 
   contains
     procedure :: init => xhcff_initialize

@@ -25,7 +25,7 @@
 !> this is mostly boiler plate code to set up the grid tesselation.
 !> the evaluation of the energy and gradient are carried out during the update call
 !> grad and energycalcs are implemented in the engrad routine respective to the model
-module libpv_calculator
+module libpv_surface_engine
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcff_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
   use xhcff_surface_search,only:bisectSearch
@@ -37,10 +37,10 @@ module libpv_calculator
   implicit none
   private
 
-  public :: calculator
+  public :: surface_engine
   public :: lebedev
 
-  type :: calculator
+  type :: surface_engine
 
     !> number of atoms
     integer :: nat
@@ -127,15 +127,15 @@ module libpv_calculator
     procedure :: info
 
     !> initialization
-    procedure :: init => init_calculator
+    procedure :: init => init_engine
 
     !> setup (init+update)
-    procedure :: setup => setup_calculator
+    procedure :: setup => setup_engine
 
     !> deallocator
-    procedure :: deallocate => deallocate_calculator
+    procedure :: deallocate => deallocate_engine
 
-  end type calculator
+  end type surface_engine
 
   real(wp),parameter :: autoaa = 0.52917726_wp
   real(wp),parameter :: aatoau = 1.0_wp/autoaa
@@ -171,12 +171,12 @@ contains   !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !> The default setup of the surface calculator
-  subroutine setup_calculator(self,nat,at,xyz,model,pressure,pr,ierr,ngrid,probe,scaling,Bondi)
+  subroutine setup_engine(self,nat,at,xyz,model,pressure,pr,ierr,ngrid,probe,scaling,Bondi)
     !> Error source
-    character(len=*),parameter :: source = 'setup_calculator'
+    character(len=*),parameter :: source = 'setup_engine'
 
     !> Instance of the surface calculator
-    class(calculator),intent(out) :: self
+    class(surface_engine),intent(out) :: self
 
     !> Number of atoms and atom numbers
     integer,intent(in)  :: nat
@@ -249,18 +249,18 @@ contains   !> MODULE PROCEDURES START HERE
       call self%info(stdout)
     end if
 
-  end subroutine setup_calculator
+  end subroutine setup_engine
 
 !=========================================================================================!
 !> Initialize data straucture
-  subroutine init_calculator(self,num,vdwRad,probeRad,ierr, &
+  subroutine init_engine(self,num,vdwRad,probeRad,ierr, &
          & rCutoff,rOffset,nAng, pressure, model)
 
     !> Error source
-    character(len=*),parameter :: source = 'init_surface_calculator'
+    character(len=*),parameter :: source = 'init_surface_engine'
 
     !> Instance of the surface calculator
-    class(calculator),intent(inout) :: self
+    class(surface_engine),intent(inout) :: self
 
     !> Atomic numbers
     integer,intent(in) :: num(:)
@@ -345,12 +345,12 @@ contains   !> MODULE PROCEDURES START HERE
     self%energy = 0.0_wp
     self%pressure = pressure
 
-  end subroutine init_calculator
+  end subroutine init_engine
 
 !=========================================================================================!
-  subroutine deallocate_calculator(self)
+  subroutine deallocate_engine(self)
     !> Instance of the surface calculator
-    class(calculator),intent(inout) :: self
+    class(surface_engine),intent(inout) :: self
 
     if (allocated(self%ppind)) deallocate (self%ppind)
     if (allocated(self%nnsas)) deallocate (self%nnsas)
@@ -366,12 +366,12 @@ contains   !> MODULE PROCEDURES START HERE
     if (allocated(self%angGrid)) deallocate (self%angGrid)
     if (allocated(self%angWeight)) deallocate (self%angWeight)
 
-  end subroutine deallocate_calculator
+  end subroutine deallocate_engine
 
 !=========================================================================================!
   subroutine update(self,num,xyz)
     !> Instance of the surface calculator
-    class(calculator),intent(inout) :: self
+    class(surface_engine),intent(inout) :: self
 
     !> Atomic numbers
     integer,intent(in) :: num(:)
@@ -595,7 +595,7 @@ contains   !> MODULE PROCEDURES START HERE
 !=========================================================================================!
   subroutine info(self,unit)
     !> Data structure
-    class(calculator),intent(in) :: self
+    class(surface_engine),intent(in) :: self
 
     !> Unit for IO
     integer,intent(in) :: unit
@@ -624,4 +624,4 @@ contains   !> MODULE PROCEDURES START HERE
 
 !=========================================================================================!
 !=========================================================================================!
-end module libpv_calculator
+end module libpv_surface_engine
