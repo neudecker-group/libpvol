@@ -40,12 +40,20 @@ add_executable(
   "${PROJECT_NAME}-tester"
   "${test-srcs}"
 )
+target_include_directories(
+  "${PROJECT_NAME}-tester"
+  PRIVATE
+  "${CMAKE_BINARY_DIR}/include"  # Path where the .mod files are located
+)
 target_link_libraries(
   "${PROJECT_NAME}-tester"
   PRIVATE
   "${PROJECT_NAME}-lib"
   "test-drive::test-drive"
 )
+
+# Ensure tester is built after the library
+add_dependencies("${PROJECT_NAME}-tester" "${PROJECT_NAME}-lib")
 
 foreach(t IN LISTS tests)
   add_test("${PROJECT_NAME}/${t}" "${PROJECT_NAME}-tester" "${t}")
