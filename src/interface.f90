@@ -163,9 +163,9 @@ contains  !> MODULE PROCEDURES START HERE
       write (myunit,*) '================================================================'
 
       if (self%model == 0) then
-        write (myunit,'(2x, a, t54, 1x, a)') "Model   ",'/ PV'
-      else
         write (myunit,'(2x, a, t54, 1x, a)') "Model   ",'/ XHCFF'
+      else
+        write (myunit,'(2x, a, t54, 1x, a)') "Model   ",'/ PV'
       end if
 
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "

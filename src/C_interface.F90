@@ -21,7 +21,7 @@
 
 module xhcfflib_interface_c
   use iso_c_binding
-  use iso_fortran_env,only:wp => real64,stdout=>output_unit,stderr=>error_unit
+  use iso_fortran_env,only:wp => real64,stdout => output_unit,stderr => error_unit
   use xhcfflib_interface
   implicit none
   private
@@ -29,13 +29,14 @@ module xhcfflib_interface_c
   !> Public C-compatible interface
   public :: c_xhcfflib_calculator
   public :: c_xhcfflib_calculator_init
-  ! public :: c_xhcfflib_calculator_singlepoint, &
-  !           c_xhcfflib_calculator_deallocate, c_xhcfflib_calculator_print
+  public :: c_xhcfflib_calculator_deallocate
+  public :: c_xhcfflib_calculator_singlepoint
+  public :: c_xhcfflib_calculator_info
 
   !> C-compatible type containing a pointer to the original Fortran type
-  type :: c_xhcfflib_calculator
+  type,bind(C) :: c_xhcfflib_calculator
     !> C will understand fortran types as pointers
-    type(xhcfflib_calculator),pointer :: ptr
+    type(c_ptr) :: ptr
   end type c_xhcfflib_calculator
 
 !========================================================================================!
@@ -46,12 +47,12 @@ contains  !> MODULE PROCEDURES START HERE
 
 !>--- C-compatible initialization function
   function c_xhcfflib_calculator_init(c_nat,c_at,c_xyz,c_pressure,c_model, &
-    &                                  c_gridpts,c_proberad,c_verbose, &
+    &                                  c_gridpts,c_proberad,c_verbose,c_printlevel,&
     &                                  c_vdwSet) &
-    &                                  result(libptr) &
+    &                                  result(calculator) &
     &                                  bind(C,name="c_xhcfflib_calculator_init")
     implicit none
-    type(c_ptr) :: libptr
+    type(c_xhcfflib_calculator) :: calculator
     integer(c_int),value,intent(in) :: c_nat
     integer(c_int),target,intent(in) :: c_at(*)
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<!
@@ -71,9 +72,8 @@ contains  !> MODULE PROCEDURES START HERE
     logical(c_bool),value,intent(in) :: c_verbose
     !integer(c_int),value,intent(in) :: c_iunit
     integer(c_int),value,intent(in) :: c_vdwSet
-    !integer(c_int),value,intent(in) :: c_printlevel
+    integer(c_int),value,intent(in) :: c_printlevel
 
-    type(c_xhcfflib_calculator),pointer :: calc_ptr
     type(xhcfflib_calculator),pointer :: calc
 
     integer :: nat
@@ -87,7 +87,7 @@ contains  !> MODULE PROCEDURES START HERE
     logical :: verbose
     integer :: iunit,vdwSet,printlevel,iostatus
     integer :: i,modelint
-    
+
     !> Convert C arguments to Fortran types
     nat = c_nat
     call c_f_pointer(c_loc(c_at),at, [nat])
@@ -106,30 +106,114 @@ contains  !> MODULE PROCEDURES START HERE
     proberad = c_proberad
     !scaling = c_scaling
     verbose = logical(c_verbose,kind=c_int)
-    iunit = stdout !> use a default here. 
+    iunit = stdout !> use a default here.
     vdwSet = c_vdwSet
-    !printlevel = c_printlevel
-    printlevel = 0
+    printlevel = c_printlevel
 
     !> Allocate and initialize the Fortran calculator
     allocate (calc)
     !> AGAIN, WARNING: There is a row-first vs column-first change in Fortran vs C -> Transpose
     call calc%init(nat,at,transpose(xyz),pressure,trim(model), &
-    &              gridpts=gridpts,proberad=proberad,verbose=verbose,&
+    &              gridpts=gridpts,proberad=proberad,verbose=verbose, printlevel=printlevel,&
     &              iunit=iunit,vdwSet=vdwSet,iostat=iostatus)
     if (iostatus == 0) then
       !> Store the pointer in the C-compatible structure
-      allocate (calc_ptr)
-      calc_ptr%ptr => calc
-      libptr = c_loc(calc_ptr)
+      calculator%ptr = c_loc(calc)
     else
-      write(stderr,'(a,i0)') 'Error initializing '//model//' calculator. code ',iostatus
-      libptr = c_null_ptr
+      write (stderr,'(a,i0)') 'Error initializing '//model//' calculator. code ',iostatus
+      calculator%ptr = c_null_ptr
       deallocate (calc)
     end if
   end function c_xhcfflib_calculator_init
 
 !========================================================================================!
+
+  subroutine c_xhcfflib_calculator_deallocate(calculator) &
+    &     bind(C,name="c_xhcfflib_calculator_deallocate")
+    type(c_xhcfflib_calculator),intent(inout) :: calculator
+    type(xhcfflib_calculator),pointer :: calc_ptr
+
+    !> Convert the C pointer to a Fortran pointer
+    call c_f_pointer(calculator%ptr,calc_ptr)
+
+    !> Deallocate the Fortran object
+    if (associated(calc_ptr)) then
+      call calc_ptr%deallocate()
+      deallocate (calc_ptr)
+    end if
+
+    !> Nullify the C pointer
+    calculator%ptr = c_null_ptr
+  end subroutine c_xhcfflib_calculator_deallocate
+
+!========================================================================================!
+
+  subroutine c_xhcfflib_calculator_singlepoint(c_calculator,c_nat,c_at,c_xyz, &
+    &                                           c_energy,c_gradient,c_iostat) &
+    &                        bind(C,name="c_xhcfflib_calculator_singlepoint")
+    implicit none
+    !> Input arguments from C
+    type(c_xhcfflib_calculator),intent(inout) :: c_calculator
+    integer(c_int),value,intent(in) :: c_nat
+    integer(c_int),target,intent(in) :: c_at(*)
+    real(c_double),target,intent(in) :: c_xyz(3,*) !> NOTE Fortran/C matrix orders
+
+    !> Output arguments to C
+    real(c_double),intent(out) :: c_energy
+    real(c_double),target,intent(out) :: c_gradient(3,*) !> NOTE Fortran/C matrix orders
+    integer(c_int),intent(out) :: c_iostat
+
+    !> Local Fortran variables
+    type(xhcfflib_calculator),pointer :: calc_ptr
+    integer :: nat
+    integer,pointer :: at(:)
+    real(wp),pointer :: xyz(:,:)
+    real(wp),pointer :: grad(:,:)
+    real(wp),allocatable :: gradient(:,:)
+    real(wp) :: energy
+    integer :: iostat,i,j
+
+    !> Convert C pointers to Fortran pointers
+    call c_f_pointer(c_calculator%ptr,calc_ptr)
+    call c_f_pointer(c_loc(c_at),at, [c_nat])
+    call c_f_pointer(c_loc(c_xyz),xyz, [c_nat,3])       !> Transpose the xyz array
+    call c_f_pointer(c_loc(c_gradient),grad, [c_nat,3]) !> Transpose the grad array
+
+    !> Set the integer variable
+    nat = c_nat
+
+    !> Workaround for the transposed gradient
+    allocate (gradient(3,nat))
+
+    !> Call the Fortran subroutine
+    call calc_ptr%singlepoint(nat,at,transpose(xyz),energy,gradient,iostat)
+
+    !> Manually transpose the gradient back to the C layout (due to assume shape input)
+    grad = transpose(gradient)
+
+    !> Pass back the results to C variables
+    c_energy = energy
+    c_iostat = iostat
+
+    deallocate (gradient)
+  end subroutine c_xhcfflib_calculator_singlepoint
+
+!========================================================================================!
+
+  subroutine c_xhcfflib_calculator_info(c_calculator,c_iunit) &
+      & bind(C,name="c_xhcfflib_calculator_info")
+    implicit none
+    !> Input arguments from C
+    type(c_xhcfflib_calculator),intent(in) :: c_calculator
+    integer(c_int),value,intent(in) :: c_iunit
+    !> Local Fortran variables
+    type(xhcfflib_calculator),pointer :: calc_ptr
+    integer :: myunit
+    !> Convert C pointer to Fortran pointer
+    call c_f_pointer(c_calculator%ptr,calc_ptr)
+    !> Call the Fortran subroutine
+    call calc_ptr%info(myunit)
+  end subroutine c_xhcfflib_calculator_info
 
 !========================================================================================!
 !========================================================================================!
