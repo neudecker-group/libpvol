@@ -2,7 +2,6 @@ module test_xhcff
   use testdrive,only:new_unittest,unittest_type,error_type,check,test_failed
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use xhcfflib_interface
-  use xhcff_surface_module
   use xhcff_type_timer
   implicit none
   private

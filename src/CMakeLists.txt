@@ -8,6 +8,7 @@ list(APPEND srcs
    "${dir}/pv_engrad.f90"
    "${dir}/calculator.f90"
    "${dir}/interface.f90"
+   "${dir}/C_interface.F90"
 )
 
 set(srcs ${srcs} PARENT_SCOPE)

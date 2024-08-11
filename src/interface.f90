@@ -88,7 +88,7 @@ contains  !> MODULE PROCEDURES START HERE
     real(wp),intent(out) :: energy
     real(wp),intent(out) :: gradient(:,:)
     integer,intent(out),optional  :: iostat
-    
+
     real(wp),parameter :: geotol = 1.0e-7_wp
 
     !> Error handling if not initialized
@@ -119,9 +119,8 @@ contains  !> MODULE PROCEDURES START HERE
       return
     end if
 
-
     !!> update geometry if changed
-    if(any(abs(self%xyz(:,:) - xyz(:,:)) > geotol)) then
+    if (any(abs(self%xyz(:,:)-xyz(:,:)) > geotol)) then
       self%xyz(:,:) = xyz(:,:)
 
       !> update surface calculator
@@ -135,7 +134,7 @@ contains  !> MODULE PROCEDURES START HERE
     if (self%verbose) call print_xhcff_results(self)
 
     if (present(iostat)) then
-        iostat = 0
+      iostat = 0
     end if
   end subroutine xhcff_singlepoint
 
@@ -158,15 +157,15 @@ contains  !> MODULE PROCEDURES START HERE
       return
     end if
 
-    if(self%printlevel >= 1) then
+    if (self%printlevel >= 1) then
       write (myunit,*) '================================================================'
       write (myunit,*) '===================== LIBXHCFF Results ========================='
       write (myunit,*) '================================================================'
 
       if (self%model == 0) then
-        write (myunit,'(2x, a, t54, 1x, a)') "Model   " , '/ PV'
+        write (myunit,'(2x, a, t54, 1x, a)') "Model   ",'/ PV'
       else
-        write (myunit,'(2x, a, t54, 1x, a)') "Model   " , '/ XHCFF'
+        write (myunit,'(2x, a, t54, 1x, a)') "Model   ",'/ XHCFF'
       end if
 
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
@@ -178,17 +177,17 @@ contains  !> MODULE PROCEDURES START HERE
     end if
 
     !> always print Volume and energy
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%grad_calculator%volume ,"/ Bohr ** 3  "
-    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Energy   ",self%grad_calculator%energy ,"/ Eh "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Volume   ",self%grad_calculator%volume,"/ Bohr ** 3  "
+    write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Energy   ",self%grad_calculator%energy,"/ Eh "
 
-    if(self%printlevel >= 2) then
+    if (self%printlevel >= 2) then
       write (myunit,*)
       write (myunit,'(a)') '> Gradient ( Eh/a0 ):'
       do i = 1,self%nat
         write (myunit,'(2x,i3,3x,3f16.6)') i,self%grad_calculator%grad(1:3,i)
       end do
     end if
-    end subroutine print_xhcff_results
+  end subroutine print_xhcff_results
 
 !========================================================================================!
   subroutine xhcff_initialize(self,nat,at,xyz,pressure,model, &
@@ -200,7 +199,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer,intent(in) :: at(nat)
     real(wp),intent(in) :: xyz(3,nat)        !> coordinates in Bohr
     real(wp),intent(in) :: pressure          !> pressure in GPa
-    character(len= *), intent(in) :: model   !> Modelflag, can be XHCFF or PV 
+    character(len=*),intent(in) :: model   !> Modelflag, can be XHCFF or PV
     integer,intent(in),optional :: gridpts   !> gridpoints per atom to construct lebedev grid
     real(wp),intent(in),optional :: proberad !> proberadius for sas calculation in angstrom
     real(wp),intent(in),optional :: scaling  !> scaling of vdw radii to simulate sas
@@ -218,7 +217,7 @@ contains  !> MODULE PROCEDURES START HERE
     !> Reset datatypes
     call self%reset()
     io = 0
-
+   
     !>
     !> mapping of optional instuctions
     !>
@@ -229,10 +228,10 @@ contains  !> MODULE PROCEDURES START HERE
       self%verbose = .false.
     end if
 
-    if(present(printlevel)) then
+    if (present(printlevel)) then
       self%printlevel = printlevel
-      else
-        self%printlevel = 0
+    else
+      self%printlevel = 0
     end if
 
     if (present(iunit)) then
@@ -257,7 +256,7 @@ contains  !> MODULE PROCEDURES START HERE
       else
         self%proberad = proberad
       end if
-    !> Default is 1.5 Angstrom, standard for water
+      !> Default is 1.5 Angstrom, standard for water
     else
       self%proberad = 1.5
     end if
@@ -278,15 +277,14 @@ contains  !> MODULE PROCEDURES START HERE
       self%bondi = .false.
     end if
 
-    if (present(scaling) .and. (io == 0)) then
+    if (present(scaling).and.(io == 0)) then
       if (scaling .lt. 0.0_wp) then
         io = 8
       end if
     end if
 
-
-    if ((model /= 'XHCFF') .and. (model /= 'PV')) then
-        io = 9
+    if ((model /= 'XHCFF').and.(model /= 'PV')) then
+      io = 9
     end if
 
     if (model == 'XHCFF') then
@@ -295,10 +293,9 @@ contains  !> MODULE PROCEDURES START HERE
       self%model = 1
     end if
 
-    if (self%verbose) write (self%myunit,'(a)') '> ', self%model, ': calling surface calculator'
+    if (self%verbose) write (self%myunit,'(a)') '> '//model//': calling surface calculator'
 
-
-      !> save input data
+    !> save input data
     self%pressure_gpa = pressure
     self%pressure_au = pressure*gpatoau
     self%nat = nat
@@ -309,8 +306,8 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> model calculator
     if (io == 0) then
-      allocate(self%grad_calculator)
-      call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,self%proberad, self%Bondi,.false., &
+      allocate (self%grad_calculator)
+      call self%grad_calculator%setup(nat,at,xyz,self%model,self%pressure_au,self%proberad,self%Bondi,.false., &
       & surferr,ngrid=gridpts,scaling=scaling)
       if (surferr /= 0) then
         io = 4
@@ -342,7 +339,7 @@ contains  !> MODULE PROCEDURES START HERE
     self%pressure_au = 0
     self%pressure_gpa = 0
     self%io = 1
-    self%printlevel=0
+    self%printlevel = 0
     self%myunit = 6
     self%is_initialized = .false.
     self%bondi = .false.
@@ -350,7 +347,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     if (allocated(self%at)) deallocate (self%at)
     if (allocated(self%xyz)) deallocate (self%xyz)
-    if (allocated(self%grad_calculator)) deallocate(self%grad_calculator)
+    if (allocated(self%grad_calculator)) deallocate (self%grad_calculator)
   end subroutine xhcff_data_deallocate
 
 !======================================================================================!
@@ -384,13 +381,13 @@ contains  !> MODULE PROCEDURES START HERE
     case (7)
       write (myunit,*) 'Passed geometry does not match previous one!'
 
-    case(8)
+    case (8)
       write (myunit,*) 'Scaling cannot be negative!'
 
-    case(9)
-      write(myunit,*) 'Model is not implemented'
-  
-  end select
+    case (9)
+      write (myunit,*) 'Model is not implemented'
+
+    end select
 
   end subroutine print_error
 
