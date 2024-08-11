@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 // Declare the Fortran initialization function
-extern void* c_xhcfflib_calculator_init(int nat, int* at, double xyz[3][24], double pressure, int model, int gridpts, double proberad, int verbose, int vdwSet);
+extern void* c_xhcfflib_calculator_init(int nat, int* at, double xyz[3][24], double pressure, int model, int gridpts, double proberad, bool verbose, int vdwSet);
 
 int main() {
+  
+    // Test molecule: caffeine
     int nat = 24;  // Number of atoms
     int at[24] = {6, 7, 6, 7, 6, 6, 6, 8, 7, 6, 8, 7, 6, 6, 
                   1, 1, 1, 1, 1, 1, 1, 1, 1, 1};  // Atom types
-
     double xyz[3][24] = {
         {2.02799738646442,  4.75011007621000,  6.33434307654413,  8.72860718071825,
          8.65318821103610,  6.23857175648671,  5.63266886875962,  3.44931709749015,
@@ -30,11 +32,12 @@ int main() {
         -1.83214617078268, -0.11022772492007,  1.56539243085954, -1.79108242206824}
     };
 
+    // Test variables
     double pressure = 1.0;
     int model = 0;
     int gridpts = 2030;
     double proberad = 1.4;
-    int verbose = 1;
+    bool verbose = true;
     int vdwSet = 0;
 
     // Call the Fortran function

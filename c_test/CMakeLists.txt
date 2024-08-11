@@ -1,12 +1,33 @@
 # Specify the minimum version of CMake
 cmake_minimum_required(VERSION 3.14)
 
-# Name of the executable
-add_executable(c_tester main.c)
 
-# Link the Fortran library to the C test program
-target_link_libraries(c_tester PRIVATE xhcff)
+set(
+  tests
+  "xhcff-C-API"
+)
+set(
+  test-srcs-c
+  "main.c"
+)
 
-# Include directories
-target_include_directories(c_tester PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+add_executable(
+  "${PROJECT_NAME}-c-tester"
+  "${test-srcs-c}"
+)
+target_include_directories(
+  "${PROJECT_NAME}-c-tester"
+  PRIVATE
+  "${CMAKE_BINARY_DIR}/include"  # Path where the .mod files are located
+)
+target_link_libraries(
+  "${PROJECT_NAME}-c-tester"
+  PRIVATE
+  "${PROJECT_NAME}-lib"
+)
+
+
+foreach(t IN LISTS tests)
+  add_test("${PROJECT_NAME}/${t}" "${PROJECT_NAME}-c-tester" "${t}")
+endforeach()
 

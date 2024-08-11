@@ -68,7 +68,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer(c_int),value,intent(in) :: c_gridpts
     real(c_double),value,intent(in) :: c_proberad
     !real(c_double),value,intent(in) :: c_scaling
-    logical(c_int),value,intent(in) :: c_verbose
+    logical(c_bool),value,intent(in) :: c_verbose
     !integer(c_int),value,intent(in) :: c_iunit
     integer(c_int),value,intent(in) :: c_vdwSet
     !integer(c_int),value,intent(in) :: c_printlevel
