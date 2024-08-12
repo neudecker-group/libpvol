@@ -148,11 +148,13 @@ contains  !> MODULE PROCEDURES START HERE
           gradi(:,iat) = gradi(:,iat) + (angGrid(:,ip) * wsa)
         end if
       end do
-
+      
+      !$omp critical
       !> finalize calculation here to save multipilications
       area = area + sasai * 4.0_wp * pi
       volume = volume + voli * 4.0_wp * pi / 3.0_wp
       grad = grad + gradi * 4.0_wp * pi
+      !$omp end critical
     end do
     !$omp end parallel do
 
