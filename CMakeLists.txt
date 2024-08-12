@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.14)
 
 project(
   "xhcff"
-  LANGUAGES "Fortran" "C"
+  LANGUAGES "Fortran" "C" "CXX"
   VERSION "0.0.1"
   DESCRIPTION "Hydrostatic pressure force-field library"
 )

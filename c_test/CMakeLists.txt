@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 3.14)
 
 
+###########################################################################
+# C
+###########################################################################
+
 set(
   tests
   "xhcff-C-API"
@@ -30,4 +34,40 @@ target_link_libraries(
 foreach(t IN LISTS tests)
   add_test("${PROJECT_NAME}/${t}" "${PROJECT_NAME}-c-tester" "${t}")
 endforeach()
+
+
+###########################################################################
+# C++
+###########################################################################
+
+# Specify that C++ is used and set the C++ standard
+set(CMAKE_CXX_STANDARD 11)  # You can adjust this to 14, 17, or later as needed
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(
+  cpptest
+  "xhcff-CPP-API"
+)
+# Add the C++ tester
+set(test-srcs-cpp "main.cpp")
+
+add_executable(
+  "${PROJECT_NAME}-cpp-tester"
+  "${test-srcs-cpp}"
+)
+set_target_properties("${PROJECT_NAME}-cpp-tester" PROPERTIES LINKER_LANGUAGE CXX)
+
+target_include_directories(
+  "${PROJECT_NAME}-cpp-tester"
+  PRIVATE
+  "${CMAKE_BINARY_DIR}/include"  # Include path for headers
+)
+
+target_link_libraries(
+  "${PROJECT_NAME}-cpp-tester"
+  PRIVATE
+  "${PROJECT_NAME}-lib"
+)
+
+add_test("${PROJECT_NAME}/${cpptest}" "${PROJECT_NAME}-cpp-tester")
 
