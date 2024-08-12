@@ -1,6 +1,7 @@
 #include "xhcfflib_interface_c.h"
 #include <iostream>
 
+
 void run_singlepoint_test() {
   int nat = 24;
   int at[nat] = {6, 7, 6, 7, 6, 6, 6, 8, 7, 6, 8, 7,
@@ -40,7 +41,8 @@ void run_singlepoint_test() {
   c_xhcfflib_calculator calc =
       c_xhcfflib_calculator_init(nat,  // int nat
                                  at,   // int *at
-                                 &xyz[0][0],  // double xyz[3][24]
+//                                 &xyz[0][0],  // double xyz[3][24]
+                                 (double *)xyz,
                                  1.0,  // double pressure
                                  1,    // int model
                                  2030, // int gridpts

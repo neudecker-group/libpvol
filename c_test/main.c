@@ -43,7 +43,7 @@ int main() {
 
   // Call the Fortran function
   c_xhcfflib_calculator calc = c_xhcfflib_calculator_init(
-      nat, at, xyz, pressure, model, gridpts, proberad, verbose, printlevel, vdwSet);
+      nat, at, (double *)xyz, pressure, model, gridpts, proberad, verbose, printlevel, vdwSet);
 
   if (calc.ptr == NULL) {
     printf("Error initializing xhcfflib calculator.\n");
@@ -58,7 +58,7 @@ int main() {
   int iostat;
 
   // Call the singlepoint function
-  c_xhcfflib_calculator_singlepoint(&calc, nat, at, xyz, &energy, gradient,
+  c_xhcfflib_calculator_singlepoint(&calc, nat, at, (double *)xyz, &energy, (double *)gradient,
                                     &iostat);
 
   // Check the result and print it
