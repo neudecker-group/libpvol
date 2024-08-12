@@ -58,10 +58,11 @@ contains  !> MODULE PROCEDURES START HERE
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<!
     !> WARNING: row-first vs column-first difference  in Fortran and C!
     real(c_double),target,intent(in) :: c_xyz(3,*)
-    !> We assume here that a 3-by-x matrix is passed, which in C corresponds
+    !> We assume here that a 3-by-x elements are passed, which in C corresponds
     !> to a vector of length nat for x, y and z coordinates respectively
-    !> The Fortran interface expects nat vectors of length 3, however.
-    !> This means, in the actual call later we have to pass the transpose!
+    !> when xyz[3][nat] was defined. 
+    !> Hence, it should be defined as xyz[nat][3] in C in order for Fortran
+    !> to handle everything correctly in the following!
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<!
     real(c_double),value,intent(in) :: c_pressure
     !character(kind=c_char,len=1),intent(in) :: c_model(*)
@@ -91,7 +92,7 @@ contains  !> MODULE PROCEDURES START HERE
     !> Convert C arguments to Fortran types
     nat = c_nat
     call c_f_pointer(c_loc(c_at),at, [nat])
-    call c_f_pointer(c_loc(c_xyz),xyz, [nat,3])
+    call c_f_pointer(c_loc(c_xyz),xyz, [3,nat]) !> assumes xyz[nat][3] in C
     pressure = c_pressure
     modelint = c_model
     select case (modelint)
@@ -169,33 +170,26 @@ contains  !> MODULE PROCEDURES START HERE
     integer,pointer :: at(:)
     real(wp),pointer :: xyz(:,:)
     real(wp),pointer :: grad(:,:)
-    real(wp),allocatable :: gradient(:,:)
     real(wp) :: energy
     integer :: iostat,i,j
 
     !> Convert C pointers to Fortran pointers
     call c_f_pointer(c_calculator%ptr,calc_ptr)
     call c_f_pointer(c_loc(c_at),at, [c_nat])
-    call c_f_pointer(c_loc(c_xyz),xyz, [c_nat,3])       !> Transpose the xyz array
-    call c_f_pointer(c_loc(c_gradient),grad, [c_nat,3]) !> Transpose the grad array
+    call c_f_pointer(c_loc(c_xyz),xyz, [3,c_nat]) !> Assumes xyz[nat][3] in C     
+    call c_f_pointer(c_loc(c_gradient),grad, [3,c_nat])  !> Assumes grad[nat][3] in C
 
     !> Set the integer variable
     nat = c_nat
 
-    !> Workaround for the transposed gradient
-    allocate (gradient(3,nat))
-
     !> Call the Fortran subroutine
-    call calc_ptr%singlepoint(nat,at,transpose(xyz),energy,gradient,iostat)
-
-    !> Manually transpose the gradient back to the C layout (due to assume shape input)
-    grad = transpose(gradient)
+    call calc_ptr%singlepoint(nat,at,xyz,energy,grad,iostat)
 
     !> Pass back the results to C variables
     c_energy = energy
+    c_gradient(1:3,1:nat) = grad(1:3,1:nat)
     c_iostat = iostat
 
-    deallocate (gradient)
   end subroutine c_xhcfflib_calculator_singlepoint
 
 !========================================================================================!
@@ -211,6 +205,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer :: myunit
     !> Convert C pointer to Fortran pointer
     call c_f_pointer(c_calculator%ptr,calc_ptr)
+    myunit = c_iunit
     !> Call the Fortran subroutine
     call calc_ptr%info(myunit)
   end subroutine c_xhcfflib_calculator_info
