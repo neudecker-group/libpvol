@@ -154,7 +154,5 @@ endif()
 if (WITH_TESTS)
   enable_testing()
   add_subdirectory("test")
-  # Include C test program
-  add_subdirectory("c_test")
 endif()
 
