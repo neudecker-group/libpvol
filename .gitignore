@@ -15,3 +15,5 @@ build_commands
 build
 _build*
 bin/
+*.egg-info/
+_skbuild
