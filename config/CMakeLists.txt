@@ -40,6 +40,8 @@ set(module-dir "${module-dir}" PARENT_SCOPE)
 option(WITH_OpenMP "Enable OpenMP support"    TRUE)
 option(WITH_TESTS  "Enable test binary build" TRUE)
 option(build_exe   "Build an executable"      FALSE)
+# For python bindings install scikit-build and pybind11
+option(PYTHON_BINDINGS  "Create Python bindings"   TRUE)
 
 #########################################################################################
 #########################################################################################

@@ -148,6 +148,19 @@ add_subdirectory("app")
 endif()
 
 ###############################################################################
+################################ python bindings ##############################
+###############################################################################
+if (PYTHON_BINDINGS)
+find_package(pybind11 REQUIRED)
+
+# Add the pybind11 module
+pybind11_add_module(pyxhcfflib src/pyxhcfflib.cpp)
+
+# Link against any existing libraries if necessary
+target_link_libraries(pyxhcfflib PRIVATE "${PROJECT_NAME}-lib")
+endif()
+
+###############################################################################
 ################################## Testing ####################################
 ###############################################################################
 # add the testsuite
