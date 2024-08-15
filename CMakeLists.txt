@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.17)
 
 project(
   "xhcff"
@@ -151,13 +151,24 @@ endif()
 ################################ python bindings ##############################
 ###############################################################################
 if (PYTHON_BINDINGS)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 REQUIRED)
 
 # Add the pybind11 module
-pybind11_add_module(pyxhcfflib src/pyxhcfflib.cpp)
+#pybind11_add_module(_xhcfflib src/pyxhcfflib.cpp)
+python_add_library(_xhcfflib src/pyxhcfflib.cpp WITH_SOABI)
 
 # Link against any existing libraries if necessary
-target_link_libraries(pyxhcfflib PRIVATE "${PROJECT_NAME}-lib")
+target_link_libraries(_xhcfflib 
+                      PRIVATE 
+                      "${PROJECT_NAME}-lib"
+                      pybind11::headers)
+
+# This is passing in the version as a define
+target_compile_definitions(_xhcfflib PRIVATE VERSION_INFO=${PROJECT_VERSION})
+
+# The install directory is the output (wheel) directory
+install(TARGETS _xhcfflib DESTINATION pyxhcfflib)
 endif()
 
 ###############################################################################

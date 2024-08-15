@@ -2,7 +2,15 @@
 #include <pybind11/numpy.h>
 #include "xhcfflib_interface_c.h"
 
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
+
 namespace py = pybind11;
+
+// a minimal test function
+int add(int i, int j) {
+    return i + j;
+}
 
 // Wrapper for the c_xhcfflib_calculator_init function
 c_xhcfflib_calculator calculator_init(int nat, py::array_t<int> at, py::array_t<double> xyz, double pressure,
@@ -59,7 +67,7 @@ void calculator_info(c_xhcfflib_calculator *calculator, int iunit) {
     c_xhcfflib_calculator_info(calculator, iunit);
 }
 
-PYBIND11_MODULE(pyxhcfflib, m) {
+PYBIND11_MODULE(_xhcfflib, m) {
     m.doc() = "Python interface for xhcfflib C/Fortran code";
 
     py::class_<c_xhcfflib_calculator>(m, "Calculator")
@@ -67,5 +75,13 @@ PYBIND11_MODULE(pyxhcfflib, m) {
         .def("deallocate", &calculator_deallocate, "Deallocate the calculator")
         .def("singlepoint", &calculator_singlepoint, "Perform single-point calculation")
         .def("info", &calculator_info, "Print calculator information");
+
+    m.def("add", &add, "small test function");
+
+#ifdef VERSION_INFO
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+#else
+    m.attr("__version__") = "dev";
+#endif
 }
 
