@@ -1,5 +1,6 @@
 # pyxhcfflib/calculator.py
 
+import numpy as np
 from .bindings import initialize_calculator
 
 class XHCFFLibCalculator:
@@ -49,8 +50,16 @@ class XHCFFLibCalculator:
            forces (numpy.ndarray): Calculated forces on each atom (shape (nat, 3)) in [Hartree/Bohr].
            iostat (int): I/O status indicating success (0) or failure (non-zero).
         """
-        energy, forces, iostat = self.calculator.singlepoint(nat, at, xyz)
-        return energy, forces, iostat
+        energy = np.zeros(1, dtype=np.float64)  # Assuming energy is a scalar
+        forces = np.zeros((nat, 3), dtype=np.float64)  # Force array of size (nat, 3)
+        iostat = np.zeros(1, dtype=np.int32)  # Assuming iostat is a scalar or single value
+
+        # Call the C++ function through the Python binding
+        self.calculator.singlepoint(nat, at, xyz, energy, forces, iostat)
+        
+        # Return the results
+        return energy[0], forces, iostat[0]
+
 
     def print_info(self, iunit=6):
         """
