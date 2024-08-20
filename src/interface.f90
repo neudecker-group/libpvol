@@ -170,10 +170,17 @@ contains  !> MODULE PROCEDURES START HERE
 
       write (myunit,'(2x, a, t40, f14.4, 1x, a)') "Pressure   ",self%pressure_gpa,"/ GPa   "
 
+      if(self%bondi)then
+      write (myunit,'(2x, a, t48, 1x, a)') "Atomic vdW radii   ",'Bondi'
+      else
+      write (myunit,'(2x, a, t51, 1x, a)') "Atomic vdW radii   ",'D3'
+      endif
+
       !> surface printout
       if (allocated(self%grad_calculator)) then
         call self%grad_calculator%info(myunit)
       end if
+      
     end if
 
     !> always print Volume and energy
