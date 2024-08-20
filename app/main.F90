@@ -20,11 +20,8 @@
 program xhcfflib_main_tester
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use omp_lib
-  use xhcff_interface
-  use xhcff_surface_module
-  use xhcff_engrad
+  use xhcfflib_interface
   use xhcff_type_timer
-  use pv_interface
   use xyzreader
   implicit none
 
@@ -40,8 +37,8 @@ program xhcfflib_main_tester
   real(wp) :: gnorm
   logical :: fail,pr
   integer :: io,grdpts,radii
-  type(xhcff_calculator) :: xhcff
-  type(pv_calculator) :: pv
+  type(xhcfflib_calculator) :: xhcff
+  type(xhcfflib_calculator) :: pv
   type(xhcff_timer) :: timer
 
   character(len=1028) :: inputfile
@@ -54,7 +51,7 @@ program xhcfflib_main_tester
   !> DEFAULTS
   pr = .true.
 
-  calctype = 1 !> 1 = XHCFF, 2 = XHCFF(+PV)
+  calctype = 0 !> 0 = XHCFF, 1 = XHCFF(+PV)
   p = 1.0_wp
   probe = 1.2_wp !> 1.2 is a typical value for water
   grdpts = 230
@@ -97,15 +94,15 @@ program xhcfflib_main_tester
   call timer%new(1,.true.)
   call timer%measure(1,atmp)
   select case (calctype)
-  case (1)
+  case (0)
     !> XHCFF
-    call xhcff%init(nat,at,xyz,p,proberad=probe,gridpts=grdpts, &
+    call xhcff%init(nat,at,xyz,p,'XHCFF',proberad=probe,gridpts=grdpts, &
     &    vdwSet=radii,verbose=pr,printlevel=2)
     call xhcff%singlepoint(nat,at,xyz,energy,gradient)
 
-  case (2)
+  case (1)
     !> XHCFF(+PV)
-    call pv%init(nat,at,xyz,p,proberad=probe,gridpts=grdpts, &
+    call pv%init(nat,at,xyz,p,'PV',proberad=probe,gridpts=grdpts, &
     &    vdwSet=radii,verbose=pr,printlevel=2)
     call pv%singlepoint(nat,at,xyz,energy,gradient)
 
@@ -187,7 +184,7 @@ subroutine ParseCommandLineArgs(threads,inputfile,calctype,grdpts,radii,probe,pr
 
     case ('-pv','--pv')
       !> switch from XHCFF to XHCFF(+PV)
-      calctype = 2
+      calctype = 1
 
     case ('-pr','--proberad')
       !> Probe radius
