@@ -1,6 +1,6 @@
 # Handling of subproject dependencies
 macro(
-  "xhcff_find_package"
+  "pvol_find_package"
   package
   methods
   url

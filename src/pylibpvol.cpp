@@ -1,6 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "xhcfflib_interface_c.h"
+#include "libpvol_interface_c.h"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -12,8 +12,8 @@ int add(int i, int j) {
     return i + j;
 }
 
-// Wrapper for the c_xhcfflib_calculator_init function
-c_xhcfflib_calculator calculator_init(int nat, py::array_t<int> at, py::array_t<double> xyz, double pressure,
+// Wrapper for the c_libpvol_calculator_init function
+c_libpvol_calculator calculator_init(int nat, py::array_t<int> at, py::array_t<double> xyz, double pressure,
                                       int model, int gridpts, double proberad,
                                       bool verbose, int printlevel, int vdwSet) {
     // Ensure the arrays are contiguous
@@ -27,16 +27,16 @@ c_xhcfflib_calculator calculator_init(int nat, py::array_t<int> at, py::array_t<
     int *at_ptr = static_cast<int *>(at_buf.ptr);
     double (*xyz_ptr)[3] = reinterpret_cast<double (*)[3]>(xyz_buf.ptr);
 
-    return c_xhcfflib_calculator_init(nat, at_ptr, xyz_ptr, pressure, model, gridpts, proberad, verbose, printlevel, vdwSet);
+    return c_libpvol_calculator_init(nat, at_ptr, xyz_ptr, pressure, model, gridpts, proberad, verbose, printlevel, vdwSet);
 }
 
-// Wrapper for the c_xhcfflib_calculator_deallocate function
-void calculator_deallocate(c_xhcfflib_calculator *calculator) {
-    c_xhcfflib_calculator_deallocate(calculator);
+// Wrapper for the c_libpvol_calculator_deallocate function
+void calculator_deallocate(c_libpvol_calculator *calculator) {
+    c_libpvol_calculator_deallocate(calculator);
 }
 
-// Wrapper for the c_xhcfflib_calculator_singlepoint function
-void calculator_singlepoint(c_xhcfflib_calculator *calculator,
+// Wrapper for the c_libpvol_calculator_singlepoint function
+void calculator_singlepoint(c_libpvol_calculator *calculator,
                             int nat, py::array_t<int> at,
                             py::array_t<double> xyz, py::array_t<double> energy,
                             py::array_t<double> gradient, py::array_t<int> iostat) {
@@ -59,18 +59,18 @@ void calculator_singlepoint(c_xhcfflib_calculator *calculator,
     double (*gradient_ptr)[3] = reinterpret_cast<double (*)[3]>(gradient_buf.ptr);
     int *iostat_ptr = static_cast<int *>(iostat_buf.ptr);
 
-    c_xhcfflib_calculator_singlepoint(calculator, nat, at_ptr, xyz_ptr, energy_ptr, gradient_ptr, iostat_ptr);
+    c_libpvol_calculator_singlepoint(calculator, nat, at_ptr, xyz_ptr, energy_ptr, gradient_ptr, iostat_ptr);
 }
 
-// Wrapper for the c_xhcfflib_calculator_info function
-void calculator_info(c_xhcfflib_calculator *calculator, int iunit) {
-    c_xhcfflib_calculator_info(calculator, iunit);
+// Wrapper for the c_libpvol_calculator_info function
+void calculator_info(c_libpvol_calculator *calculator, int iunit) {
+    c_libpvol_calculator_info(calculator, iunit);
 }
 
-PYBIND11_MODULE(_xhcfflib, m) {
-    m.doc() = "Python interface for xhcfflib C/Fortran code";
+PYBIND11_MODULE(_libpvol, m) {
+    m.doc() = "Python interface for libpvol C/Fortran code";
 
-    py::class_<c_xhcfflib_calculator>(m, "Calculator")
+    py::class_<c_libpvol_calculator>(m, "Calculator")
         .def(py::init(&calculator_init), "Initialize the calculator")
         .def("deallocate", &calculator_deallocate, "Deallocate the calculator")
         .def("singlepoint", &calculator_singlepoint, "Perform single-point calculation")

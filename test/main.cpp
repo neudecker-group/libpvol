@@ -1,4 +1,4 @@
-#include "xhcfflib_interface_c.h"
+#include "libpvol_interface_c.h"
 #include <iostream>
 
 void run_singlepoint_test() {
@@ -36,7 +36,7 @@ void run_singlepoint_test() {
   int iostat;
 
   // Initialize the Fortran calculator
-  c_xhcfflib_calculator calc = c_xhcfflib_calculator_init(
+  c_libpvol_calculator calc = c_libpvol_calculator_init(
       nat, // int nat
       at,  // int *at
            //                                 &xyz[0][0],  // double xyz[3][24]
@@ -52,12 +52,12 @@ void run_singlepoint_test() {
   );
 
   if (calc.ptr == NULL) {
-    std::cerr << "Error initializing xhcfflib calculator.\n";
+    std::cerr << "Error initializing libpvol calculator.\n";
     return;
   }
 
   // Run the singlepoint calculation
-  c_xhcfflib_calculator_singlepoint(&calc, nat, at, xyz, &energy, gradient,
+  c_libpvol_calculator_singlepoint(&calc, nat, at, xyz, &energy, gradient,
                                     &iostat);
 
   if (iostat == 0) {
@@ -78,10 +78,10 @@ void run_singlepoint_test() {
 
   // Print results to stdout
   int iunit = 6;
-  c_xhcfflib_calculator_info(&calc, iunit);
+  c_libpvol_calculator_info(&calc, iunit);
 
   // Deallocate the Fortran calculator
-  c_xhcfflib_calculator_deallocate(&calc);
+  c_libpvol_calculator_deallocate(&calc);
 }
 
 int main() {

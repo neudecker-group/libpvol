@@ -1,40 +1,40 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
 !> The typical usage is:
-!> 1. declare "use xhcff_interface" in your code
-!> 2. Create a xhcff_calculator
-!> 3. Initialize it with the %init procedure (returns the first XHCFF grad)
-!> 4. Obtain the XHCFF grad with the %singlepoint procedure
+!> 1. declare "use pvol_interface" in your code
+!> 2. Create a pvol_calculator
+!> 3. Initialize it with the %init procedure (returns the first PV grad)
+!> 4. Obtain the PV grad with the %singlepoint procedure
 
-module xhcfflib_interface
+module libpvol_interface
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use xhcff_surface_lebedev,only:gridSize
+  use pvol_surface_lebedev,only:gridSize
   use libpv_surface_engine
   implicit none
   private
 
 !> routines/datatypes that can be seen outside the module
-  public :: xhcfflib_calculator
+  public :: libpvol_calculator
 
 !> Main class for interface
-  type :: xhcfflib_calculator
+  type :: libpvol_calculator
 
     !> System data
     integer :: nat                   !> number of atoms
@@ -62,12 +62,12 @@ module xhcfflib_interface
     type(surface_engine),allocatable :: grad_calculator
 
   contains
-    procedure :: init => xhcff_initialize
-    procedure :: deallocate => xhcff_data_deallocate
-    procedure :: reset => xhcff_data_deallocate
-    procedure :: info => print_xhcff_results
-    procedure :: singlepoint => xhcff_singlepoint
-  end type xhcfflib_calculator
+    procedure :: init => pvol_initialize
+    procedure :: deallocate => pvol_data_deallocate
+    procedure :: reset => pvol_data_deallocate
+    procedure :: info => print_pvol_results
+    procedure :: singlepoint => pvol_singlepoint
+  end type libpvol_calculator
 
 !========================================================================================!
 !========================================================================================!
@@ -75,11 +75,11 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 !========================================================================================!
 
-  subroutine xhcff_singlepoint(self,nat,at,xyz,energy,gradient,iostat)
+  subroutine pvol_singlepoint(self,nat,at,xyz,energy,gradient,iostat)
     implicit none
 
     !> DATA CONTAINER
-    class(xhcfflib_calculator),intent(inout) :: self
+    class(libpvol_calculator),intent(inout) :: self
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
@@ -131,16 +131,16 @@ contains  !> MODULE PROCEDURES START HERE
     energy = self%grad_calculator%energy
     gradient = self%grad_calculator%grad
 
-    if (self%verbose) call print_xhcff_results(self)
+    if (self%verbose) call print_pvol_results(self)
 
     if (present(iostat)) then
       iostat = 0
     end if
-  end subroutine xhcff_singlepoint
+  end subroutine pvol_singlepoint
 
 !========================================================================================!
-  subroutine print_xhcff_results(self,iunit)
-    class(xhcfflib_calculator),intent(in) :: self
+  subroutine print_pvol_results(self,iunit)
+    class(libpvol_calculator),intent(in) :: self
     integer,intent(in),optional :: iunit !> file handle (usually output_unit=6)
     integer :: myunit,i
     character(len=*),parameter :: outfmt = '(2x,a,f23.12,1x,a)'
@@ -159,7 +159,7 @@ contains  !> MODULE PROCEDURES START HERE
 
     if (self%printlevel >= 1) then
       write (myunit,*) '================================================================'
-      write (myunit,*) '===================== LIBXHCFF Results ========================='
+      write (myunit,*) '===================== LIBPVOL  Results ========================='
       write (myunit,*) '================================================================'
 
       if (self%model == 0) then
@@ -194,13 +194,13 @@ contains  !> MODULE PROCEDURES START HERE
         write (myunit,'(2x,i3,3x,3f16.6)') i,self%grad_calculator%grad(1:3,i)
       end do
     end if
-  end subroutine print_xhcff_results
+  end subroutine print_pvol_results
 
 !========================================================================================!
-  subroutine xhcff_initialize(self,nat,at,xyz,pressure,model, &
+  subroutine pvol_initialize(self,nat,at,xyz,pressure,model, &
   &                 gridpts,proberad,scaling,verbose,iunit,vdwSet,printlevel,iostat)
-    character(len=*),parameter :: source = 'xhcff_initialize'
-    class(xhcfflib_calculator),intent(inout) :: self
+    character(len=*),parameter :: source = 'pvol_initialize'
+    class(libpvol_calculator),intent(inout) :: self
     !> INPUT
     integer,intent(in) :: nat
     integer,intent(in) :: at(nat)
@@ -335,12 +335,12 @@ contains  !> MODULE PROCEDURES START HERE
 
     self%io = io
 
-  end subroutine xhcff_initialize
+  end subroutine pvol_initialize
 
 !========================================================================================!
-  subroutine xhcff_data_deallocate(self)
+  subroutine pvol_data_deallocate(self)
     implicit none
-    class(xhcfflib_calculator) :: self
+    class(libpvol_calculator) :: self
 
     self%nat = 0
     self%pressure_au = 0
@@ -355,14 +355,14 @@ contains  !> MODULE PROCEDURES START HERE
     if (allocated(self%at)) deallocate (self%at)
     if (allocated(self%xyz)) deallocate (self%xyz)
     if (allocated(self%grad_calculator)) deallocate (self%grad_calculator)
-  end subroutine xhcff_data_deallocate
+  end subroutine pvol_data_deallocate
 
 !======================================================================================!
   subroutine print_error(myunit,errcode)
     integer,intent(in) :: myunit,errcode
     integer :: i
 
-    write (myunit,*) 'Error in libxhcff module:'
+    write (myunit,*) 'Error in libpvol module:'
     select case (errcode)
     case (1)
       write (myunit,*) 'was not initialized before calculation call!'
@@ -400,5 +400,5 @@ contains  !> MODULE PROCEDURES START HERE
 
 !========================================================================================!
 !========================================================================================!
-end module xhcfflib_interface
+end module libpvol_interface
 

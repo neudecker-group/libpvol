@@ -1,17 +1,17 @@
-# pyxhcfflib/ase_calculator.py
+# pylibpvol/ase_calculator.py
 
 from ase.calculators.calculator import Calculator, all_changes
 from ase.units import Bohr,Hartree
-from .calculator import XHCFFLibCalculator
+from .calculator import LibpvolCalculator
 import numpy as np
 
-class XHCFFLibASECalculator(Calculator):
+class LibpvolASECalculator(Calculator):
     implemented_properties = ['energy', 'forces']
 
     def __init__(self, pressure=1.0, model=1, gridpts=2030, proberad=1.2,
                  verbose=False, printlevel=2, vdwSet=1, attached_calculator=None, **kwargs):
         """
-        Initialize the XHCFFLib ASE Calculator.
+        Initialize the libpvol ASE Calculator.
         One can attach another ASE calculator to it as the lib provides additive
         energies and gradients, rather than a full potential.
         """
@@ -36,7 +36,7 @@ class XHCFFLibASECalculator(Calculator):
         # Extract information from the atoms object
         nat = len(atoms)
         at = atoms.get_atomic_numbers()
-        xyz = atoms.get_positions() / Bohr  # pyxhcfflib expects Bohr!
+        xyz = atoms.get_positions() / Bohr  # pylibpvol expects Bohr!
 
         # use the attached calculator for the underlying potential
         if self.attached_calculator:
@@ -50,7 +50,7 @@ class XHCFFLibASECalculator(Calculator):
 
         # Initialize the custom calculator if it hasn’t been done yet
         if self.calculator is None:
-            self.calculator = XHCFFLibCalculator(nat, at, xyz, self.pressure,
+            self.calculator = LibpvolCalculator(nat, at, xyz, self.pressure,
                                                  self.model, self.gridpts, self.proberad,
                                                  self.verbose, self.printlevel, self.vdwSet)
         

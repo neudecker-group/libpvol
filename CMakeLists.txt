@@ -1,12 +1,12 @@
-# This file is part of xhcfflib.
+# This file is part of libpvol.
 # SPDX-Identifier: LGPL-3.0-or-later
 #
-# xhcfflib is free software: you can redistribute it and/or modify it under
+# libpvol is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# xhcfflib is distributed in the hope that it will be useful,
+# libpvol is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
@@ -14,7 +14,7 @@
 cmake_minimum_required(VERSION 3.17)
 
 project(
-  "xhcff"
+  "pvol"
   LANGUAGES "Fortran" "C" "CXX"
   VERSION "0.0.1"
   DESCRIPTION "Hydrostatic pressure force-field library"
@@ -60,7 +60,7 @@ set(
   "$<$<VERSION_LESS:${CMAKE_VERSION},3.20>:BLAS::BLAS>"
 )
 
-# xhcff-lib sources
+# pvol-lib sources
 set(srcs)
 add_subdirectory("src")
 
@@ -142,7 +142,7 @@ install(
 )
 
 
-# build a minimal app that can read xyz files and perform XHCFF singlepoints
+# build a minimal app that can read xyz files and perform singlepoints
 if (build_exe)
 add_subdirectory("app")
 endif()
@@ -155,20 +155,20 @@ find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 REQUIRED)
 
 # Add the pybind11 module
-#pybind11_add_module(_xhcfflib src/pyxhcfflib.cpp)
-python_add_library(_xhcfflib src/pyxhcfflib.cpp WITH_SOABI)
+#pybind11_add_module(_libpvol src/pylibpvol.cpp)
+python_add_library(_libpvol src/pylibpvol.cpp WITH_SOABI)
 
 # Link against any existing libraries if necessary
-target_link_libraries(_xhcfflib 
+target_link_libraries(_libpvol 
                       PRIVATE 
                       "${PROJECT_NAME}-lib"
                       pybind11::headers)
 
 # This is passing in the version as a define
-target_compile_definitions(_xhcfflib PRIVATE VERSION_INFO=${PROJECT_VERSION})
+target_compile_definitions(_libpvol PRIVATE VERSION_INFO=${PROJECT_VERSION})
 
 # The install directory is the output (wheel) directory
-install(TARGETS _xhcfflib DESTINATION pyxhcfflib)
+install(TARGETS _libpvol DESTINATION pylibpvol)
 endif()
 
 ###############################################################################

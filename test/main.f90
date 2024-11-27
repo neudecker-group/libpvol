@@ -3,7 +3,7 @@ program tester
   use,intrinsic :: iso_fortran_env,only:error_unit
   use testdrive,only:run_testsuite,new_testsuite,testsuite_type, &
     & select_suite,run_selected,get_argument
-  use test_xhcff,only:collect_xhcff
+  use test_pvol,only:collect_pvol
   implicit none
   integer :: stat,is
   character(len=:),allocatable :: suite_name,test_name
@@ -15,7 +15,7 @@ program tester
 !&<
 !> note: these must have the same name as in CMakeLists.txt
   testsuites = [ &
-    new_testsuite("xhcff", collect_xhcff) &
+    new_testsuite("pvol", collect_pvol) &
   ]
 !&>
 

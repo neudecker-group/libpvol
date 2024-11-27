@@ -1,20 +1,20 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib.  If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 !--------------------------------------------------------------------------------!
 !> The original (unmodified) source code can be found under the GNU LGPL 3.0 license
 !> Copyright (C) 2019-2020 Sebastian Ehlert
@@ -28,7 +28,7 @@
 !  V.I. Lebedev, and D.N. Laikov, "A quadrature formula for the sphere of the
 !  131st algebraic order of accuracy", Doklady Mathematics, Vol. 59, No. 3,
 !  1999, pp. 477-481.
-module xhcff_surface_lebedev
+module pvol_surface_lebedev
   use iso_fortran_env,only:wp => real64
   implicit none
 
@@ -5081,4 +5081,4 @@ contains
     n = n-1
   end subroutine ld5810
 
-end module xhcff_surface_lebedev
+end module pvol_surface_lebedev

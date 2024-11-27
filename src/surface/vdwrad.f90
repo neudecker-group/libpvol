@@ -1,20 +1,20 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib.  If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 !--------------------------------------------------------------------------------!
 !> The original (unmodified) source code can be found under the GNU LGPL 3.0 license
 !> Copyright (C) 2019-2020 Sebastian Ehlert
@@ -26,7 +26,7 @@
 ! Bondi, J. Phys. Chem. 68, 441 (1964)
 
 !> D3 van-der-Waals radii
-module xhcff_surface_vdwradd3
+module pvol_surface_vdwradd3
   use iso_fortran_env,only:wp => real64
   implicit none
   private
@@ -150,5 +150,5 @@ contains  !> MODULE PROCEDURES START HERE
 
 !========================================================================================!
 !========================================================================================!
-end module xhcff_surface_vdwradd3
+end module pvol_surface_vdwradd3
 

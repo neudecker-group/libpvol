@@ -1,20 +1,20 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib.  If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 !--------------------------------------------------------------------------------!
 !> Adapted from the xtb GBSA source code which can be found under the
 !> GNU LGPL 3.0 license, Copyright (C) 2019-2020 Sebastian Ehlert
@@ -27,12 +27,12 @@
 !> grad and energycalcs are implemented in the engrad routine respective to the model
 module libpv_surface_engine
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use xhcff_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
-  use xhcff_surface_search,only:bisectSearch
-  use xhcff_surface_lebedev,only:gridSize,getAngGrid
+  use pvol_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
+  use pvol_surface_search,only:bisectSearch
+  use pvol_surface_lebedev,only:gridSize,getAngGrid
   use pv_engrad, only:pv_eg
   use xhcff_engrad, only:xhcff_eg
-  use xhcff_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
+  use pvol_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
 
   implicit none
   private

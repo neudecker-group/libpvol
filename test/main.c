@@ -1,4 +1,4 @@
-#include "xhcfflib_interface_c.h"
+#include "libpvol_interface_c.h"
 
 // The test implementation program
 int main() {
@@ -42,16 +42,16 @@ int main() {
   int printlevel = 2;
 
   // Call the Fortran function
-  c_xhcfflib_calculator calc =
-      c_xhcfflib_calculator_init(nat, at, xyz, pressure, model, gridpts,
+  c_libpvol_calculator calc =
+      c_libpvol_calculator_init(nat, at, xyz, pressure, model, gridpts,
                                  proberad, verbose, printlevel, vdwSet);
 
   if (calc.ptr == NULL) {
-    printf("Error initializing xhcfflib calculator.\n");
+    printf("Error initializing libpvol calculator.\n");
     return 1;
   }
 
-  printf("xhcfflib calculator initialized successfully.\n");
+  printf("libpvol calculator initialized successfully.\n");
 
   // Use the calculator...
   double energy;
@@ -59,7 +59,7 @@ int main() {
   int iostat;
 
   // Call the singlepoint function
-  c_xhcfflib_calculator_singlepoint(&calc, nat, at, xyz, &energy, gradient,
+  c_libpvol_calculator_singlepoint(&calc, nat, at, xyz, &energy, gradient,
                                     &iostat);
 
   // Check the result and print it
@@ -80,15 +80,15 @@ int main() {
   int iunit = 6; // Use 6 to get Fortran's STDOUT
 
   // Call the print function
-  c_xhcfflib_calculator_info(&calc, iunit);
+  c_libpvol_calculator_info(&calc, iunit);
 
   // Deallocate the Fortran object
-  c_xhcfflib_calculator_deallocate(&calc);
+  c_libpvol_calculator_deallocate(&calc);
 
   if (calc.ptr == NULL) {
-    printf("xhcfflib calculator deallocated successfully.\n");
+    printf("libpvol calculator deallocated successfully.\n");
   } else {
-    printf("Error deallocating xhcfflib calculator.\n");
+    printf("Error deallocating libpvol calculator.\n");
   }
 
   return 0;

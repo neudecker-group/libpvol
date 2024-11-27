@@ -1,18 +1,18 @@
-# This file is part of xhcff.
+# This file is part of libpvol.
 # SPDX-Identifier: LGPL-3.0-or-later
 #
-# xhcff is free software: you can redistribute it and/or modify it under
+# libpvol is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# xhcff is distributed in the hope that it will be useful,
+# libpvol is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with xhcff.  If not, see <https://www.gnu.org/licenses/>.
+# along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 # Set the module path for CMake includes
 
 #########################################################################################
@@ -61,7 +61,7 @@ endif()
 
 
 ### Options and defaults
-include("${CMAKE_CURRENT_SOURCE_DIR}/modules/xhcff-utils.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/modules/pvol-utils.cmake")
 set(fortran_minimal_versions "GNU;7.5" "Intel;19.0")
 check_minimal_compiler_version("Fortran" "${fortran_minimal_versions}")
 

@@ -1,11 +1,11 @@
-# pyxhcfflib/calculator.py
+# pylibpvol/calculator.py
 
 import numpy as np
 from .bindings import initialize_calculator
 
-class XHCFFLibCalculator:
+class LibpvolCalculator:
     """
-    A high-level Python interface for the XHCFFLib calculator, 
+    A high-level Python interface for the libpvol calculator, 
     providing methods to perform calculations and manage resources.
 
     This class wraps the lower-level pybind11 bindings and offers
@@ -15,7 +15,7 @@ class XHCFFLibCalculator:
     def __init__(self, nat, at, xyz, pressure=1.0, model=1, gridpts=1202, proberad=1.5,
                  verbose=True, printlevel=2, vdwSet=0):
         """
-        Initialize the XHCFFLib calculator with optional arguments.
+        Initialize the libpvol calculator with optional arguments.
 
         Parameters:
             nat (int): Number of atoms in the system.
@@ -73,7 +73,7 @@ class XHCFFLibCalculator:
 
     def finalize(self):
         """
-        Deallocate resources used by the XHCFFLib calculator.
+        Deallocate resources used by the libpvol calculator.
         """
         self.calculator.deallocate()
 
