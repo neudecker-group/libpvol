@@ -245,7 +245,7 @@ contains   !> MODULE PROCEDURES START HERE
   end subroutine setup_engine
 
 !=========================================================================================!
-!> Initialize data straucture
+!> Initialize data structure
   subroutine init_engine(self,num,vdwRad,probeRad,ierr, &
          & rCutoff,rOffset,nAng, pressure, model)
 

@@ -12,7 +12,7 @@ class XHCFFLibCalculator:
     a more Pythonic API for users.
     """
 
-    def __init__(self, nat, at, xyz, pressure=1.0, model=1, gridpts=2030, proberad=1.2,
+    def __init__(self, nat, at, xyz, pressure=1.0, model=1, gridpts=1202, proberad=1.5,
                  verbose=True, printlevel=2, vdwSet=0):
         """
         Initialize the XHCFFLib calculator with optional arguments.
@@ -25,9 +25,9 @@ class XHCFFLibCalculator:
             model (int, optional): Model index specifying the calculation model.
                                    Options are 0=XHCFF, 1=PV
             gridpts (int, optional): Number of angular (Lebedev) grid points for calculations.
-                                     Default is 2030.
+                                     Default is 1202.
             proberad (float, optional): Probe radius used in calculations in [Ang]. 
-                                        Default is 1.4.
+                                        Default is 1.5.
             verbose (bool, optional): If True, provides detailed output *during the setup*
             printlevel (int, optional): Level of detail for printed output. Default is 2.
             vdwSet (int, optional): Index specifying the Van der Waals set to use. Default is 0.
