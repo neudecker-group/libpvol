@@ -45,7 +45,7 @@ contains  !> Unit tests for PV calculations
     real(wp) :: p,probe
     type(libpvol_calculator) :: xhcff
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.28730396441365957_wp  !> no energy for XHCFF standard implementation
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.001050219817793_wp,   0.000044408915900_wp,  -0.000000111886661_wp, &
     &  -0.000395314094809_wp,   0.000023296469152_wp,  -0.000003586648768_wp, &
@@ -120,7 +120,7 @@ contains  !> Unit tests for PV calculations
     real(wp) :: p,probe
     type(libpvol_calculator) :: xhcff
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.35816736587731784_wp  
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.004413376075752_wp,   0.000954403196482_wp,  -0.000000161399853_wp, &
     &  -0.000258787756931_wp,   0.000031462790573_wp,  -0.000004387443464_wp, &
@@ -198,7 +198,7 @@ contains  !> Unit tests for PV calculations
     character(len=40) :: atmp
     logical :: speedup
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.35816736587731784_wp
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.004413376075752_wp,   0.000954403196482_wp,  -0.000000161399853_wp, &
     &  -0.000258787756931_wp,   0.000031462790573_wp,  -0.000004387443464_wp, &

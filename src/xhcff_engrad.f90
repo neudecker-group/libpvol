@@ -159,7 +159,7 @@ contains  !> MODULE PROCEDURES START HERE
     !$omp end parallel do
 
     !> xhcff force field is not conservative and thus has no energy contribution
-    energy = 0.0_wp
+    energy = volume * pressure
     grad = grad * pressure
 
     
