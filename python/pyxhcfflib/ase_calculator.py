@@ -8,12 +8,25 @@ import numpy as np
 class LibpvolASECalculator(Calculator):
     implemented_properties = ['energy', 'forces']
 
-    def __init__(self, pressure=1.0, model=1, gridpts=2030, proberad=1.2,
+    def __init__(self, pressure: float, model=1, gridpts=1202, proberad=1.5,
                  verbose=False, printlevel=2, vdwSet=1, attached_calculator=None, **kwargs):
         """
-        Initialize the libpvol ASE Calculator.
+        Initialize the libpvol ASE Calculator. \n
         One can attach another ASE calculator to it as the lib provides additive
-        energies and gradients, rather than a full potential.
+        energies and gradients, rather than a full potential. \n
+        :param float pressure: Pressure in the system in [GPa].
+        :param int, optional model: Model index specifying the calculation model. \n
+                               Options: 0=XHCFF, 1=PV.
+        :param int, optional gridpts: Number of angular (Lebedev) grid points for calculations. \n
+                                 Default is 1202.
+        :param float, otional proberad: Probe radius used in calculations in [Ang].\n
+                                    Default is 1.5.
+        :param bool, optional verbose: If True, provides detailed output *during the setup*
+        :param int, optional printlevel: Level of detail for printed output. \n
+                                         Default is 2.
+        :param int, optional vdwSet: Index specifying the Van der Waals set to use. \n
+                                     Options: 0=D3 (H-Pu), 1=Bondi (H-Ar)  \n
+                                     Default is 0.
         """
         Calculator.__init__(self, **kwargs)
         self.pressure = pressure
