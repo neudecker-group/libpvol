@@ -1,33 +1,33 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib.  If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 !--------------------------------------------------------------------------------!
 !> The original (unmodified) source code can be found under the GNU LGPL 3.0 license
 !> Copyright (C) 2019-2020 Sebastian Ehlert, Stefan Grimme
 !> at https://github.com/grimme-lab/xtb
 !================================================================================!
-module xhcff_type_timer
+module pvol_type_timer
    use iso_fortran_env, only: wp => real64, int64
    implicit none
 
-   public :: xhcff_timer
+   public :: pvol_timer
    private
 
-   type :: xhcff_timer
+   type :: pvol_timer
       
       !> number of timers
       integer, private :: n = 0
@@ -54,7 +54,7 @@ module xhcff_type_timer
       procedure,private :: start_timing
       procedure,private :: stop_timing
    
-   end type xhcff_timer
+   end type pvol_timer
 
 contains
 
@@ -64,7 +64,7 @@ subroutine allocate_timer(self,n,verbose)
    implicit none
    
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
 
    !> number of timers
    integer, intent(in)           :: n
@@ -98,7 +98,7 @@ subroutine deallocate_timer(self)
    implicit none
    
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
    
    self%n = 0
    self%totwall = 0
@@ -114,7 +114,7 @@ end subroutine deallocate_timer
 function get_timer(self,i) result(time)
 
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
    
    !> if specific timer
    integer,intent(in),optional :: i
@@ -152,7 +152,7 @@ subroutine write_timing(self,iunit,i,inmsg,verbose)
    implicit none
    
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
    
    !> I/O unit
    integer,intent(in) :: iunit
@@ -235,7 +235,7 @@ subroutine write_all_timings(self,iunit,inmsg)
    implicit none
    
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
    
    !> I/O unit
    integer,intent(in) :: iunit
@@ -318,7 +318,7 @@ subroutine timer(self,i,inmsg)
    implicit none
    
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
 
    !> index
    integer,intent(in) :: i
@@ -351,7 +351,7 @@ subroutine start_timing(self,i)
    implicit none
 
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
    
    !> index 
    integer,intent(in) :: i
@@ -371,7 +371,7 @@ subroutine stop_timing(self,i)
    implicit none
  
    !> instance of timer
-   class(xhcff_timer),intent(inout) :: self
+   class(pvol_timer),intent(inout) :: self
   
    !> index
    integer,intent(in) :: i
@@ -408,4 +408,4 @@ subroutine timing(time_cpu,time_wall)
 
 end subroutine timing
 
-end module xhcff_type_timer
+end module pvol_type_timer

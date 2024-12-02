@@ -22,9 +22,9 @@ if(NOT DEFINED "${_pkg}_FIND_METHOD")
   set("${_pkg}_FIND_METHOD" "subproject" "cmake" "fetch" "pkgconf")
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/xhcff-utils.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/pvol-utils.cmake")
 
-xhcff_find_package("${_lib}" "${${_pkg}_FIND_METHOD}" "${_url}")
+pvol_find_package("${_lib}" "${${_pkg}_FIND_METHOD}" "${_url}")
 
 if(TARGET "${_lib}::${_lib}")
   set (found TRUE)

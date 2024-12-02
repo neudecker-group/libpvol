@@ -1,27 +1,27 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2023 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
-program xhcfflib_main_tester
+program libpvol_main_tester
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use omp_lib
-  use xhcfflib_interface
-  use xhcff_type_timer
+  use libpvol_interface
+  use pvol_type_timer
   use xyzreader
   implicit none
 
@@ -37,9 +37,9 @@ program xhcfflib_main_tester
   real(wp) :: gnorm
   logical :: fail,pr
   integer :: io,grdpts,radii
-  type(xhcfflib_calculator) :: xhcff
-  type(xhcfflib_calculator) :: pv
-  type(xhcff_timer) :: timer
+  type(libpvol_calculator) :: xhcff
+  type(libpvol_calculator) :: pv
+  type(pvol_timer) :: timer
 
   character(len=1028) :: inputfile
   integer :: threads,calctype
@@ -101,7 +101,7 @@ program xhcfflib_main_tester
     call xhcff%singlepoint(nat,at,xyz,energy,gradient)
 
   case (1)
-    !> XHCFF(+PV)
+    !> PV
     call pv%init(nat,at,xyz,p,'PV',proberad=probe,gridpts=grdpts, &
     &    vdwSet=radii,verbose=pr,printlevel=2)
     call pv%singlepoint(nat,at,xyz,energy,gradient)
@@ -115,7 +115,7 @@ program xhcfflib_main_tester
   deallocate (gradient)
   deallocate (xyz,at)
 !=======================================================================================!
-end program xhcfflib_main_tester
+end program libpvol_main_tester
 
 !=======================================================================================!
 subroutine ompprint_intern(str)
@@ -127,7 +127,7 @@ subroutine ompprint_intern(str)
   TID = OMP_GET_THREAD_NUM()
   IF (TID .EQ. 0) THEN
     nproc = OMP_GET_NUM_THREADS()
-    write (str,'(a,i0,a)') 'XHCFF runtime (',nproc,' threads)'
+    write (str,'(a,i0,a)') 'PVol runtime (',nproc,' threads)'
   END IF
 !$OMP END PARALLEL
 end subroutine ompprint_intern
@@ -182,9 +182,9 @@ subroutine ParseCommandLineArgs(threads,inputfile,calctype,grdpts,radii,probe,pr
       call GET_COMMAND_ARGUMENT(i+1,arg2)
       if (exists(arg2)) inputfile = trim(arg2)
 
-    case ('-pv','--pv')
-      !> switch from XHCFF to XHCFF(+PV)
-      calctype = 1
+    case ('-xhcff','--xhcff')
+      !> switch from XHCFF to XHCFF+(PV)
+      calctype = 0
 
     case ('-pr','--proberad')
       !> Probe radius
@@ -232,14 +232,14 @@ end subroutine ParseCommandLineArgs
 subroutine printhelp()
   !> Print a brief description of the program
   write (*,"(1x,a)") "This program performs [brief description of what your program does]."
-  write (*,"(1x,a)") "Usage: xhcff <inputfile>.xyz [options]"
+  write (*,"(1x,a)") "Usage: pvol <inputfile>.xyz [options]"
   write (*,*)
   write (*,"(1x,a)") "Options (all optional):"
   !> Describing each command-line argument
   write (*,"(1x,a)") " -T, --threads <int>      Number of threads for parallelization."
   write (*,"(1x,a)") " -i, --input <str>        Specify input file (xyz format)."
   write (*,"(1x,a)") "                          Alternatively, the first argument can be the input file."
-  write (*,"(1x,a)") " -pv, --pv                Switch from XHCFF to XHCFF(+PV)."
+  write (*,"(1x,a)") " -xhcff, --xchff               Switch from PV to XHCFF(+PV)."
   write (*,"(1x,a)") " -pr, --proberad <real>   Set the probe radius In Angström."
   write (*,"(1x,a)") " -p, --pressure <real>    Set the pressure in GPa."
   write (*,"(1x,a)") " -g, --gridpoints <int>   Number of Lebedev grid points per atom."
@@ -260,7 +260,7 @@ subroutine print_header()
   implicit none
   write (*,*)
   write (*,"(10x,a)") repeat('+',42)
-  write (*,"(10x,a)") "+"//repeat(' ',12)//"XHCFF App v0.0.1"//repeat(' ',12)//'+'
+  write (*,"(10x,a)") "+"//repeat(' ',12)//"PVol App v0.0.1"//repeat(' ',12)//'+'
   write (*,"(10x,a)") repeat('+',42)
   write (*,"(10x,a)") "Authors:  F.Zeller, T.Neudecker, P.Pracht"
   write (*,*)

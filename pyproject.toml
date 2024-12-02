@@ -1,4 +1,4 @@
-# python setup for pyxhcfflib
+# python setup for pylibpvol
 # use 
 #   pip install .
 # to install. Requires scikit-build and pybind11
@@ -13,9 +13,9 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "pyxhcfflib"
+name = "pylibpvol"
 version = "0.0.1"
-description = "A Python interface to the xhcfflib Fortran/C++ code"
+description = "A Python interface to the libpvol Fortran/C++ code"
 readme = "README.md"
 license = { text = "GNU Lesser General Public License v3 (LGPL-3.0-or-later)" }
 authors = [
@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/zellerf/xhcff-lib"
+"Homepage" = "https://github.com/neudecker-group/libpvol"
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
@@ -52,7 +52,7 @@ args = [
 
 # linter stuff, in case it is installed
 [tool.ruff]
-src = ["python/pyxhcfflib"]
+src = ["python/pylibpvol"]
 
 [tool.ruff.lint]
 extend-select = [

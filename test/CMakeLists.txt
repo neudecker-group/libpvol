@@ -5,7 +5,7 @@
 # Unit testing
 set(
   tests
-  "xhcff"
+  "pvol"
 )
 set(
   test-srcs
@@ -53,7 +53,7 @@ cmake_minimum_required(VERSION 3.14)
 
 set(
   tests
-  "xhcff-C-API"
+  "pvol-C-API"
 )
 set(
   test-srcs-c
@@ -91,7 +91,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(
   cpptest
-  "xhcff-C++-API"
+  "pvol-C++-API"
 )
 # Add the C++ tester
 set(test-srcs-cpp "main.cpp")

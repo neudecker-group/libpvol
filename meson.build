@@ -1,5 +1,5 @@
 project(
-  'xhcff',
+  'pvol',
   'fortran', 'c',
   version: '0.0.1',
   license: 'LGPL-3.0-or-later',
@@ -23,7 +23,7 @@ srcs = []
 subdir('src')
 
 # Create library target
-xhcfflib_lib = library(
+libpvol_lib = library(
   meson.project_name(),
   sources: srcs,
   dependencies: exe_deps,
@@ -31,10 +31,10 @@ xhcfflib_lib = library(
 )
 
 # Export as dependency
-xhcfflib_inc = [include_directories('include'), xhcfflib_lib.private_dir_include()]
-xhcfflib_dep = declare_dependency(
-  link_with: xhcfflib_lib,
-  include_directories: xhcfflib_inc,
+libpvol_inc = [include_directories('include'), libpvol_lib.private_dir_include()]
+libpvol_dep = declare_dependency(
+  link_with: libpvol_lib,
+  include_directories: libpvol_inc,
   dependencies: exe_deps,
   variables: {'includedir': meson.current_source_dir() / 'include'},
 )
@@ -44,10 +44,10 @@ xhcfflib_dep = declare_dependency(
 if get_option('build_exe')
 app = []
 subdir('app')
-xhcfflib_exe = executable(
-  'xhcff',
+libpvol_exe = executable(
+  'pvol',
   sources: app,
-  dependencies: xhcfflib_dep,
+  dependencies: libpvol_dep,
   install: install,
   link_language: 'fortran',
 )

@@ -1,37 +1,37 @@
-module test_xhcff
+module test_pvol
   use testdrive,only:new_unittest,unittest_type,error_type,check,test_failed
   use iso_fortran_env,only:wp => real64,stdout => output_unit
-  use xhcfflib_interface
-  use xhcff_type_timer
+  use libpvol_interface
+  use pvol_type_timer
   implicit none
   private
 
-  public :: collect_xhcff
+  public :: collect_pvol
 
   real(wp),parameter :: thr = 5e+6_wp*epsilon(1.0_wp)
   real(wp),parameter :: thr2 = 1e-6
 
 !========================================================================================!
 !========================================================================================!
-contains  !> Unit tests for XHCFF calculations
+contains  !> Unit tests for PV calculations
 !========================================================================================!
 !========================================================================================!
 
 !> Collect all exported unit tests
-  subroutine collect_xhcff(testsuite)
+  subroutine collect_pvol(testsuite)
     !> Collection of tests
     type(unittest_type),allocatable,intent(out) :: testsuite(:)
 
 !&<
     testsuite = [ &
-    new_unittest("XHCFF singlepoint          ",test_xhcff_sp), &
-    new_unittest("XHCFF (Bondi radii) SP     ",test_xhcff_bondi_sp), &
-    new_unittest("XHCFF OpenMP parallel SP   ",test_xhcff_openmp), &
-    new_unittest("XHCFF(+PV) singlepoint     ",test_xhcff_pv_sp), &
-    new_unittest("XHCFF(+PV) num. gradient   ",test_xhcff_pv_numgrad) &
+    new_unittest("XHCFF(+PV) singlepoint          ",test_xhcff_sp), &
+    new_unittest("XHCFF(+PV) (Bondi radii) SP     ",test_xhcff_bondi_sp), &
+    new_unittest("XHCFF+(PV) OpenMP parallel SP   ",test_xhcff_openmp), &
+    new_unittest("PV singlepoint     ",test_pv_sp), &
+    new_unittest("PV num. gradient   ",test_pv_numgrad) &
     ]
 !&>
-  end subroutine collect_xhcff
+  end subroutine collect_pvol
 
 !========================================================================================!
 
@@ -43,9 +43,9 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(xhcfflib_calculator) :: xhcff
+    type(libpvol_calculator) :: xhcff
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.28730396441365957_wp  !> no energy for XHCFF standard implementation
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.001050219817793_wp,   0.000044408915900_wp,  -0.000000111886661_wp, &
     &  -0.000395314094809_wp,   0.000023296469152_wp,  -0.000003586648768_wp, &
@@ -118,9 +118,9 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(xhcfflib_calculator) :: xhcff
+    type(libpvol_calculator) :: xhcff
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.35816736587731784_wp  
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.004413376075752_wp,   0.000954403196482_wp,  -0.000000161399853_wp, &
     &  -0.000258787756931_wp,   0.000031462790573_wp,  -0.000004387443464_wp, &
@@ -193,12 +193,12 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io,i,j,ntimes
     real(wp) :: p,probe
-    type(xhcfflib_calculator) :: xhcff
-    type(xhcff_timer) :: timer
+    type(libpvol_calculator) :: xhcff
+    type(pvol_timer) :: timer
     character(len=40) :: atmp
     logical :: speedup
 !&<
-    real(wp),parameter :: e_ref = 0.0_wp  !> no energy for XHCFF standard implementation
+    real(wp),parameter :: e_ref = 0.35816736587731784_wp
     real(wp),parameter :: g_ref(3,testnat) = reshape([&
     &  -0.004413376075752_wp,   0.000954403196482_wp,  -0.000000161399853_wp, &
     &  -0.000258787756931_wp,   0.000031462790573_wp,  -0.000004387443464_wp, &
@@ -316,7 +316,7 @@ contains  !> Unit tests for XHCFF calculations
 
 !========================================================================================!
 
-  subroutine test_xhcff_pv_sp(error)
+  subroutine test_pv_sp(error)
     use coffeine
     type(error_type),allocatable,intent(out) :: error
     real(wp) :: energy
@@ -324,7 +324,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io
     real(wp) :: p,probe
-    type(xhcfflib_calculator) :: pv
+    type(libpvol_calculator) :: pv
 
 !&<
     real(wp),parameter :: e_ref = 1053.433399736551337_wp
@@ -389,11 +389,11 @@ contains  !> Unit tests for XHCFF calculations
     end if
 
     deallocate (grad)
-  end subroutine test_xhcff_pv_sp
+  end subroutine test_pv_sp
 
 !========================================================================================!
 
-  subroutine test_xhcff_pv_numgrad(error)
+  subroutine test_pv_numgrad(error)
     use coffeine
     type(error_type),allocatable,intent(out) :: error
     real(wp) :: energy
@@ -401,7 +401,7 @@ contains  !> Unit tests for XHCFF calculations
     integer,allocatable :: at(:)
     integer :: nat,io,i,j
     real(wp) :: p,probe,step,bw,bw2,fw,fw2
-    type(xhcfflib_calculator) :: pv
+    type(libpvol_calculator) :: pv
     real(wp),allocatable :: gradient(:,:),g_ref(:,:),stencil(:,:)
 !&<
     real(wp),parameter :: e_ref = 1053.415994538545_wp
@@ -462,8 +462,8 @@ contains  !> Unit tests for XHCFF calculations
     end if
 
     deallocate (grad)
-  end subroutine test_xhcff_pv_numgrad
+  end subroutine test_pv_numgrad
 
 !========================================================================================!
 !========================================================================================!
-end module test_xhcff
+end module test_pvol

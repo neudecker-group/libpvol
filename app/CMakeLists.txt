@@ -1,7 +1,7 @@
 
 set(dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
-list(APPEND xhcffapp
+list(APPEND pvolapp
   "${dir}/xyzreader.f90"
   "${dir}/timer.f90"
   "${dir}/main.F90"
@@ -9,7 +9,7 @@ list(APPEND xhcffapp
 
 add_executable(
   "${PROJECT_NAME}-exe"
-  "${xhcffapp}"
+  "${pvolapp}"
 )
 set_target_properties(
   "${PROJECT_NAME}-exe"

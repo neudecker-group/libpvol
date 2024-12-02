@@ -1,21 +1,21 @@
-# This file is part of xhcff.
+# This file is part of libpvol.
 # SPDX-Identifier: LGPL-3.0-or-later
 #
-# xhcff is free software: you can redistribute it and/or modify it under
+# libpvol is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# xhcff is distributed in the hope that it will be useful,
+# libpvol is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with xhcff.  If not, see <https://www.gnu.org/licenses/>.
+# along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 
 tests = [
-  'xhcff',
+  'pvol',
 ]
 
 test_srcs = files(
@@ -32,7 +32,7 @@ endforeach
 tester = executable(
   'tester',
   sources: test_srcs,
-  link_with: xhcfflib_lib,
+  link_with: libpvol_lib,
   dependencies: [testdrive_dep],
   link_language: 'fortran',
 )

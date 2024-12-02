@@ -1,8 +1,8 @@
-# pyxhcfflib/__init__.py
+# pylibpvol/__init__.py
 
-from ._xhcfflib import  __version__, add
+from ._libpvol import  __version__, add
 from .bindings import *
-from .calculator import XHCFFLibCalculator
-from .ase_calculator import XHCFFLibASECalculator
+from .calculator import LibpvolCalculator
+from .ase_calculator import LibpvolASECalculator
 
-__all__ = ["__version__",'XHCFFLibCalculator', 'XHCFFLibASECalculator',"add"]
+__all__ = ["__version__",'LibpvolCalculator', 'LibpvolASECalculator',"add"]

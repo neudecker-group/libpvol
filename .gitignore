@@ -6,7 +6,7 @@
 cmake_install.cmake
 Makefile
 cmake-build-debug/
-xhcfflib/
+libpvol/
 CMakeFiles/
 .idea/
 github_bin/

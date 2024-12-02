@@ -1,43 +1,43 @@
 !================================================================================!
-! This file is part of xhcfflib.
+! This file is part of libpvol.
 !
 ! Copyright (C) 2024 Felix Zeller, Tim Neudecker, Philipp Pracht
 !
-! xhcfflib is free software: you can redistribute it and/or modify it under
+! libpvol is free software: you can redistribute it and/or modify it under
 ! the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 !
-! xhcfflib is distributed in the hope that it will be useful,
+! libpvol is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU Lesser General Public License for more details.
 !
 ! You should have received a copy of the GNU Lesser General Public License
-! along with xhcfflib. If not, see <https://www.gnu.org/licenses/>.
+! along with libpvol. If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
-!> c bindings for the xhcff_lib
+!> c bindings for libpvol
 
-module xhcfflib_interface_c
+module libpvol_interface_c
   use iso_c_binding
   use iso_fortran_env,only:wp => real64,stdout => output_unit,stderr => error_unit
-  use xhcfflib_interface
+  use libpvol_interface
   implicit none
   private
 
   !> Public C-compatible interface
-  public :: c_xhcfflib_calculator
-  public :: c_xhcfflib_calculator_init
-  public :: c_xhcfflib_calculator_deallocate
-  public :: c_xhcfflib_calculator_singlepoint
-  public :: c_xhcfflib_calculator_info
+  public :: c_libpvol_calculator
+  public :: c_libpvol_calculator_init
+  public :: c_libpvol_calculator_deallocate
+  public :: c_libpvol_calculator_singlepoint
+  public :: c_libpvol_calculator_info
 
   !> C-compatible type containing a pointer to the original Fortran type
-  type,bind(C) :: c_xhcfflib_calculator
+  type,bind(C) :: c_libpvol_calculator
     !> C will understand fortran types as pointers
     type(c_ptr) :: ptr
-  end type c_xhcfflib_calculator
+  end type c_libpvol_calculator
 
 !========================================================================================!
 !========================================================================================!
@@ -46,13 +46,13 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
 !>--- C-compatible initialization function
-  function c_xhcfflib_calculator_init(c_nat,c_at,c_xyz,c_pressure,c_model, &
+  function c_libpvol_calculator_init(c_nat,c_at,c_xyz,c_pressure,c_model, &
     &                                  c_gridpts,c_proberad,c_verbose,c_printlevel,&
     &                                  c_vdwSet) &
     &                                  result(calculator) &
-    &                                  bind(C,name="c_xhcfflib_calculator_init")
+    &                                  bind(C,name="c_libpvol_calculator_init")
     implicit none
-    type(c_xhcfflib_calculator) :: calculator
+    type(c_libpvol_calculator) :: calculator
     integer(c_int),value,intent(in) :: c_nat
     integer(c_int),target,intent(in) :: c_at(*)
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<!
@@ -75,7 +75,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer(c_int),value,intent(in) :: c_vdwSet
     integer(c_int),value,intent(in) :: c_printlevel
 
-    type(xhcfflib_calculator),pointer :: calc
+    type(libpvol_calculator),pointer :: calc
 
     integer :: nat
     integer,pointer :: at(:)
@@ -125,14 +125,14 @@ contains  !> MODULE PROCEDURES START HERE
       calculator%ptr = c_null_ptr
       deallocate (calc)
     end if
-  end function c_xhcfflib_calculator_init
+  end function c_libpvol_calculator_init
 
 !========================================================================================!
 
-  subroutine c_xhcfflib_calculator_deallocate(calculator) &
-    &     bind(C,name="c_xhcfflib_calculator_deallocate")
-    type(c_xhcfflib_calculator),intent(inout) :: calculator
-    type(xhcfflib_calculator),pointer :: calc_ptr
+  subroutine c_libpvol_calculator_deallocate(calculator) &
+    &     bind(C,name="c_libpvol_calculator_deallocate")
+    type(c_libpvol_calculator),intent(inout) :: calculator
+    type(libpvol_calculator),pointer :: calc_ptr
 
     !> Convert the C pointer to a Fortran pointer
     call c_f_pointer(calculator%ptr,calc_ptr)
@@ -145,16 +145,16 @@ contains  !> MODULE PROCEDURES START HERE
 
     !> Nullify the C pointer
     calculator%ptr = c_null_ptr
-  end subroutine c_xhcfflib_calculator_deallocate
+  end subroutine c_libpvol_calculator_deallocate
 
 !========================================================================================!
 
-  subroutine c_xhcfflib_calculator_singlepoint(c_calculator,c_nat,c_at,c_xyz, &
+  subroutine c_libpvol_calculator_singlepoint(c_calculator,c_nat,c_at,c_xyz, &
     &                                           c_energy,c_gradient,c_iostat) &
-    &                        bind(C,name="c_xhcfflib_calculator_singlepoint")
+    &                        bind(C,name="c_libpvol_calculator_singlepoint")
     implicit none
     !> Input arguments from C
-    type(c_xhcfflib_calculator),intent(inout) :: c_calculator
+    type(c_libpvol_calculator),intent(inout) :: c_calculator
     integer(c_int),value,intent(in) :: c_nat
     integer(c_int),target,intent(in) :: c_at(*)
     real(c_double),target,intent(in) :: c_xyz(3,*) !> NOTE Fortran/C matrix orders
@@ -165,7 +165,7 @@ contains  !> MODULE PROCEDURES START HERE
     integer(c_int),intent(out) :: c_iostat
 
     !> Local Fortran variables
-    type(xhcfflib_calculator),pointer :: calc_ptr
+    type(libpvol_calculator),pointer :: calc_ptr
     integer :: nat
     integer,pointer :: at(:)
     real(wp),pointer :: xyz(:,:)
@@ -190,26 +190,26 @@ contains  !> MODULE PROCEDURES START HERE
     c_gradient(1:3,1:nat) = grad(1:3,1:nat)
     c_iostat = iostat
 
-  end subroutine c_xhcfflib_calculator_singlepoint
+  end subroutine c_libpvol_calculator_singlepoint
 
 !========================================================================================!
 
-  subroutine c_xhcfflib_calculator_info(c_calculator,c_iunit) &
-      & bind(C,name="c_xhcfflib_calculator_info")
+  subroutine c_libpvol_calculator_info(c_calculator,c_iunit) &
+      & bind(C,name="c_libpvol_calculator_info")
     implicit none
     !> Input arguments from C
-    type(c_xhcfflib_calculator),intent(in) :: c_calculator
+    type(c_libpvol_calculator),intent(in) :: c_calculator
     integer(c_int),value,intent(in) :: c_iunit
     !> Local Fortran variables
-    type(xhcfflib_calculator),pointer :: calc_ptr
+    type(libpvol_calculator),pointer :: calc_ptr
     integer :: myunit
     !> Convert C pointer to Fortran pointer
     call c_f_pointer(c_calculator%ptr,calc_ptr)
     myunit = c_iunit
     !> Call the Fortran subroutine
     call calc_ptr%info(myunit)
-  end subroutine c_xhcfflib_calculator_info
+  end subroutine c_libpvol_calculator_info
 
 !========================================================================================!
 !========================================================================================!
-end module xhcfflib_interface_c
+end module libpvol_interface_c
