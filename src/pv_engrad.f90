@@ -114,7 +114,7 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (xyzt(3,size(angGrid,2)))
     allocate (areas(size(angGrid,2)))
 
-    !$omp parallel do default(none) shared(area, volume, grad) &
+    !$omp parallel do default(none) reduction(+:area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
     !$omp& voli, gradi, sasap, jj, nni, nnj, grdi, grds, drjj, rdotn)
@@ -168,11 +168,11 @@ contains  !> MODULE PROCEDURES START HERE
         end if
       end do
       !> finalize eq 10
-      !$omp critical 
+      !!$omp critical 
       area = area + sasai * 4.0_wp * pi
       volume = volume + voli * 4.0_wp * pi / 3.0_wp
       grad = grad + gradi * 4.0_wp * pi / 3.0_wp
-      !$omp end critical
+      !!$omp end critical
     end do
     !$omp end parallel do
     energy = volume * pressure

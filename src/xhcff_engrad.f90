@@ -106,7 +106,7 @@ contains  !> MODULE PROCEDURES START HERE
     volume =0.0_wp
     allocate (gradi(3,nat),source=0.0_wp)
 
-    !$omp parallel do default(none) shared(area, volume, grad) &
+    !$omp parallel do default(none) reduction(+:area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, sasai, xyza, wr, ip, xyzp, wsa, voli, gradi, sasap, rdotn)
     do iat = 1,nat
@@ -149,12 +149,12 @@ contains  !> MODULE PROCEDURES START HERE
         end if
       end do
       
-      !$omp critical
+      !!$omp critical
       !> finalize calculation here to save multipilications
       area = area + sasai * 4.0_wp * pi
       volume = volume + voli * 4.0_wp * pi / 3.0_wp
       grad = grad + gradi * 4.0_wp * pi
-      !$omp end critical
+      !!$omp end critical
     end do
     !$omp end parallel do
 
