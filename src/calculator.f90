@@ -30,8 +30,8 @@ module libpv_surface_engine
   use pvol_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
   use pvol_surface_search,only:bisectSearch
   use pvol_surface_lebedev,only:gridSize,getAngGrid
-  use pv_engrad, only:pv_eg
-  use xhcff_engrad, only:xhcff_eg
+  use pv_engrad,only:pv_eg
+  use xhcff_engrad,only:xhcff_eg
   use pvol_surface_vdwradd3,only:vanDerWaalsRadD3,vanDerWaalsRadBondi
 
   implicit none
@@ -103,7 +103,7 @@ module libpv_surface_engine
     real(wp) :: sasa
 
     !> Molecular pressure gradient
-    real(wp), allocatable :: grad(:,:)
+    real(wp),allocatable :: grad(:,:)
     real(wp) :: energy
     real(wp) :: surface
     real(wp) :: volume
@@ -185,10 +185,10 @@ contains   !> MODULE PROCEDURES START HERE
     real(wp),intent(in) :: xyz(3,nat)
 
     !> model to use
-    integer, intent(in) :: model
+    integer,intent(in) :: model
 
     !> pressure
-    real(wp), intent(in) :: pressure
+    real(wp),intent(in) :: pressure
 
     !> printout flag
     logical,intent(in) :: pr
@@ -223,13 +223,13 @@ contains   !> MODULE PROCEDURES START HERE
     ! TODO make not optional
     vdwRad = vanDerWaalsRadD3
     if (Bondi) then
-        vdwRad = vanDerWaalsRadBondi
+      vdwRad = vanDerWaalsRadBondi
     else
       vdwRad = vanDerWaalsRadD3
     end if
 
     if (present(scaling)) then
-        vdwRad = vdwRad * scaling
+      vdwRad = vdwRad*scaling
     end if
 
     !> call init_surface_calculator.
@@ -247,7 +247,7 @@ contains   !> MODULE PROCEDURES START HERE
 !=========================================================================================!
 !> Initialize data structure
   subroutine init_engine(self,num,vdwRad,probeRad,ierr, &
-         & rCutoff,rOffset,nAng, pressure, model)
+         & rCutoff,rOffset,nAng,pressure,model)
 
     !> Error source
     character(len=*),parameter :: source = 'init_surface_engine'
@@ -274,10 +274,10 @@ contains   !> MODULE PROCEDURES START HERE
     integer,intent(in) :: nAng
 
     !> pressure in a.u.
-    real(wp), intent(in) :: pressure
-    
+    real(wp),intent(in) :: pressure
+
     !> model for gradient calculation
-    integer, intent(in) :: model
+    integer,intent(in) :: model
 
     integer :: iat,izp,jat,ij,iang
     real(wp) :: r
@@ -379,19 +379,19 @@ contains   !> MODULE PROCEDURES START HERE
        & self%lrcut,self%srcut,self%nnsas,self%nnlists,self%nnrad, &
        & self%nnlistr,self%ddpair,.false.)
 
-      ! reset gradient und energy
-       self%energy = 0.0_wp
-      self%grad = 0.0_wp
+    ! reset gradient und energy
+    self%energy = 0.0_wp
+    self%grad = 0.0_wp
 
     ! compute gradient and energy
     if (self%model == 0) then
       call xhcff_eg(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
-        & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
-         & self%sasa, self%volume, self%energy, self%grad) 
+        & self%wrp,self%trj2,self%angWeight,self%angGrid,self%pressure, &
+         & self%sasa,self%volume,self%energy,self%grad)
     else if (self%model == 1) then
       call pv_eg(self%nat,self%nnsas,self%nnlists,xyz,self%vdwsa, &
-      & self%wrp,self%trj2,self%angWeight,self%angGrid, self%pressure, &
-       & self%sasa, self%volume, self%energy, self%grad) 
+      & self%wrp,self%trj2,self%angWeight,self%angGrid,self%pressure, &
+       & self%sasa,self%volume,self%energy,self%grad)
     end if
 
   end subroutine update
@@ -593,10 +593,10 @@ contains   !> MODULE PROCEDURES START HERE
     !> Unit for IO
     integer,intent(in) :: unit
 
-   ! if (allocated(self%gamsasa)) then
-   !   write (unit,'(2x, a, t40, es14.4, 1x, a, t60, es14.4, 1x, a)') &
-   !     "Surface tension",surfaceTension,"Eh",surfaceTension*automNm,"dyn/cm"
-   ! end if
+    ! if (allocated(self%gamsasa)) then
+    !   write (unit,'(2x, a, t40, es14.4, 1x, a, t60, es14.4, 1x, a)') &
+    !     "Surface tension",surfaceTension,"Eh",surfaceTension*automNm,"dyn/cm"
+    ! end if
 
     write (unit,'(2x, a, t40, i14, 1x, a)') &
       "Grid points",self%nAng,"/ per atom"
@@ -606,7 +606,7 @@ contains   !> MODULE PROCEDURES START HERE
 
     write (unit,'(2x, a )') repeat('-',54)
 
- !   Todo: use area variable
+    !   Todo: use area variable
     write (unit,'(2x, a, t40, f14.4, 1x, a)') &
       "Total molecular surface",self%sasa,"/ Bohr²"
     write (unit,'(2x, a, t40, f14.4, 1x, a)') &
