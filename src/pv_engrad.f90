@@ -55,10 +55,10 @@ contains  !> MODULE PROCEDURES START HERE
 
   !> pure gradient calculation
 
-  subroutine pv_eg(nat, nnsas, nnlists, xyz, vdwsa, &
+  subroutine pv_eg(nat,nnsas,nnlists,xyz,vdwsa, &
         & wrp,trj2,angWeight,angGrid,pressure,area,volume,energy,grad)
-  !$  use omp_lib
-    
+!$  use omp_lib
+
     !> Number of atoms
     integer,intent(in) :: nat
 
@@ -88,23 +88,23 @@ contains  !> MODULE PROCEDURES START HERE
 
     real(wp),intent(in) :: pressure
 
-    !> Surface area 
+    !> Surface area
     real(wp),intent(out) :: area
 
     real(wp),intent(out) :: volume
 
-    real(wp), intent(out) :: energy
+    real(wp),intent(out) :: energy
 
     !> Derivative of surface area w.r.t. cartesian coordinates
     real(wp),intent(out) :: grad(:,:)
 
     integer :: iat,ip,jj,nnj,nni,nno
-    real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,drjj(3), voli, rdotn
-    real(wp),allocatable :: grds(:,:),grads(:,:),xyzt(:,:),areas(:), gradi(:,:)
+    real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,drjj(3),voli,rdotn
+    real(wp),allocatable :: grds(:,:),grads(:,:),xyzt(:,:),areas(:),gradi(:,:)
     integer,allocatable :: grdi(:)
 
     area = 0.0_wp
-    volume =0.0_wp
+    volume = 0.0_wp
 
     !> allocate space for the gradient storage
     allocate (grads(3,nat),source=0.0_wp)
@@ -114,7 +114,7 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (xyzt(3,size(angGrid,2)))
     allocate (areas(size(angGrid,2)))
 
-    !$omp parallel do default(none) shared(area, volume, grad) &
+    !$omp parallel do default(none) reduction(+:area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, grads, sasai, xyza, wr, ip, xyzp, wsa, xyzt, areas, &
     !$omp& voli, gradi, sasap, jj, nni, nnj, grdi, grds, drjj, rdotn)
@@ -126,8 +126,7 @@ contains  !> MODULE PROCEDURES START HERE
       !> initialize storage
       gradi = 0.0_wp
       sasai = 0.0_wp
-      voli  = 0.0_wp
-
+      voli = 0.0_wp
 
       !> atomic position
       xyza(:) = xyz(:,iat)
@@ -138,7 +137,7 @@ contains  !> MODULE PROCEDURES START HERE
       do ip = 1,size(angGrid,2)
         !> grid point position
         xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
-        
+
         !> reset area gradient storage for point
         grads = 0.0_wp
 
@@ -153,8 +152,8 @@ contains  !> MODULE PROCEDURES START HERE
           sasai = sasai+wsa
 
           !> calculate and accumulate the volume fraction
-          rdotn = xyzp(1) * angGrid(1,ip) + xyzp(2) * angGrid(2,ip) + xyzp(3) * angGrid(3,ip)
-          voli = voli + rdotn * wsa
+          rdotn = xyzp(1)*angGrid(1,ip)+xyzp(2)*angGrid(2,ip)+xyzp(3)*angGrid(3,ip)
+          voli = voli+rdotn*wsa
 
           !> accumulate the surface gradient
           do jj = 1,nni
@@ -163,20 +162,20 @@ contains  !> MODULE PROCEDURES START HERE
             grads(:,iat) = grads(:,iat)+drjj(:)
             grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do
-          gradi(:,iat) = gradi(:,iat) + (angGrid(:,ip) * wsa)
-          gradi = gradi + (rdotn * grads)
+          gradi(:,iat) = gradi(:,iat)+(angGrid(:,ip)*wsa)
+          gradi = gradi+(rdotn*grads)
         end if
       end do
       !> finalize eq 10
-      !$omp critical 
-      area = area + sasai * 4.0_wp * pi
-      volume = volume + voli * 4.0_wp * pi / 3.0_wp
-      grad = grad + gradi * 4.0_wp * pi / 3.0_wp
-      !$omp end critical
+      !!$omp critical
+      area = area+sasai*4.0_wp*pi
+      volume = volume+voli*4.0_wp*pi/3.0_wp
+      grad = grad+gradi*4.0_wp*pi/3.0_wp
+      !!$omp end critical
     end do
     !$omp end parallel do
-    energy = volume * pressure
-    grad = grad * pressure
+    energy = volume*pressure
+    grad = grad*pressure
 
   end subroutine pv_eg
 

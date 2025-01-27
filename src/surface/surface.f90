@@ -22,7 +22,7 @@
 !================================================================================!
 
 !> Implementation of the PVpl surface calculator
-!> legacy, not needed anymore. 
+!> legacy, not needed anymore.
 module pvol_surface_module
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   use pvol_surface_math_wrapper,only:matDet3x3,dot,gemv,symv
@@ -251,7 +251,7 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
     if (present(scaling)) then
-        vdwRad = vdwRad * scaling
+      vdwRad = vdwRad*scaling
     end if
 
     !> call init_surface_calculator.

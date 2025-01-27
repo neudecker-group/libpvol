@@ -231,7 +231,7 @@ end subroutine ParseCommandLineArgs
 
 subroutine printhelp()
   !> Print a brief description of the program
-  write (*,"(1x,a)") "This program performs [brief description of what your program does]."
+  write (*,"(1x,a)") "This program performs a single PVol or XHCFF evaluation for a molecule."
   write (*,"(1x,a)") "Usage: pvol <inputfile>.xyz [options]"
   write (*,*)
   write (*,"(1x,a)") "Options (all optional):"
