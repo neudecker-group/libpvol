@@ -163,8 +163,8 @@ contains  !> MODULE PROCEDURES START HERE
           do jj = 1,nni
             nnj = grdi(jj)
             drjj(:) = wsa*grds(:,jj)*4.0_wp*pi
-            tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip) + drjj
-            tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip) - drjj
+            tess(iat)%dadr(:,iat,ip) = tess(iat)%dadr(:,iat,ip)+drjj
+            tess(iat)%dadr(:,nnj,ip) = tess(iat)%dadr(:,nnj,ip)-drjj
             !grads(:,iat) = grads(:,iat)+drjj(:)
             !grads(:,nnj) = grads(:,nnj)-drjj(:)
           end do

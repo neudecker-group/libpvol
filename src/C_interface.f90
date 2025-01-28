@@ -60,7 +60,7 @@ contains  !> MODULE PROCEDURES START HERE
     real(c_double),target,intent(in) :: c_xyz(3,*)
     !> We assume here that a 3-by-x elements are passed, which in C corresponds
     !> to a vector of length nat for x, y and z coordinates respectively
-    !> when xyz[3][nat] was defined. 
+    !> when xyz[3][nat] was defined.
     !> Hence, it should be defined as xyz[nat][3] in C in order for Fortran
     !> to handle everything correctly in the following!
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<!
@@ -115,7 +115,7 @@ contains  !> MODULE PROCEDURES START HERE
     allocate (calc)
     !> AGAIN, WARNING: There is a row-first vs column-first change in Fortran vs C -> Transpose
     call calc%init(nat,at,transpose(xyz),pressure,trim(model), &
-    &              gridpts=gridpts,proberad=proberad,verbose=verbose, printlevel=printlevel,&
+    &              gridpts=gridpts,proberad=proberad,verbose=verbose,printlevel=printlevel,&
     &              iunit=iunit,vdwSet=vdwSet,iostat=iostatus)
     if (iostatus == 0) then
       !> Store the pointer in the C-compatible structure
@@ -176,7 +176,7 @@ contains  !> MODULE PROCEDURES START HERE
     !> Convert C pointers to Fortran pointers
     call c_f_pointer(c_calculator%ptr,calc_ptr)
     call c_f_pointer(c_loc(c_at),at, [c_nat])
-    call c_f_pointer(c_loc(c_xyz),xyz, [3,c_nat]) !> Assumes xyz[nat][3] in C     
+    call c_f_pointer(c_loc(c_xyz),xyz, [3,c_nat]) !> Assumes xyz[nat][3] in C
     call c_f_pointer(c_loc(c_gradient),grad, [3,c_nat])  !> Assumes grad[nat][3] in C
 
     !> Set the integer variable

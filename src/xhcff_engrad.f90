@@ -26,7 +26,7 @@ module xhcff_engrad
   use iso_fortran_env,only:wp => real64,stdout => output_unit
   implicit none
   private
-  
+
   !> Smoothing dielectric function parameters
   real(wp),parameter :: autoaa = 0.52917726_wp
   real(wp),parameter :: aatoau = 1.0_wp/autoaa
@@ -55,11 +55,11 @@ contains  !> MODULE PROCEDURES START HERE
 !========================================================================================!
 
   !> pure gradient calculation
-  subroutine xhcff_eg(nat, nnsas, nnlists, xyz, vdwsa, &
+  subroutine xhcff_eg(nat,nnsas,nnlists,xyz,vdwsa, &
     & wrp,trj2,angWeight,angGrid,pressure,area,volume,energy,grad)
     implicit none
 
-  !> Number of atoms
+    !> Number of atoms
     integer,intent(in) :: nat
 
     !> Number of neighbours to consider
@@ -88,25 +88,25 @@ contains  !> MODULE PROCEDURES START HERE
 
     real(wp),intent(in) :: pressure
 
-    !> Surface area 
+    !> Surface area
     real(wp),intent(out) :: area
 
     real(wp),intent(out) :: volume
 
-    real(wp), intent(out) :: energy
+    real(wp),intent(out) :: energy
 
     !> Derivative of surface area w.r.t. cartesian coordinates
     real(wp),intent(out) :: grad(:,:)
 
     integer :: iat,ip,nno
-    real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa, voli, rdotn, trcorr(3)
+    real(wp) :: rsas,sasai,xyza(3),xyzp(3),sasap,wr,wsa,voli,rdotn,trcorr(3)
     real(wp),allocatable :: gradi(:,:)
 
     area = 0.0_wp
-    volume =0.0_wp
+    volume = 0.0_wp
     allocate (gradi(3,nat),source=0.0_wp)
 
-    !$omp parallel do default(none) shared(area, volume, grad) &
+    !$omp parallel do default(none) reduction(+:area, volume, grad) &
     !$omp shared(nat, vdwsa, nnsas, xyz, wrp, angGrid, angWeight, nnlists, trj2) &
     !$omp private(iat, rsas, nno, sasai, xyza, wr, ip, xyzp, wsa, voli, gradi, sasap, rdotn)
     do iat = 1,nat
@@ -117,7 +117,7 @@ contains  !> MODULE PROCEDURES START HERE
       !> initialize storage
       gradi = 0.0_wp
       sasai = 0.0_wp
-      voli  = 0.0_wp
+      voli = 0.0_wp
 
       !> atomic position
       xyza(:) = xyz(:,iat)
@@ -129,9 +129,9 @@ contains  !> MODULE PROCEDURES START HERE
       do ip = 1,size(angGrid,2)
         !> grid point position
         xyzp(:) = xyza(:)+rsas*angGrid(1:3,ip)
-        
+
         !> atomic surface function at the grid point
-        call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp, sasap)
+        call compute_w_sp(nat,nnlists(:nno,iat),trj2,vdwsa,xyz,nno,xyzp,sasap)
         if (sasap .gt. tolsesp) then
 
           !> numerical quadrature weight
@@ -141,28 +141,27 @@ contains  !> MODULE PROCEDURES START HERE
           sasai = sasai+wsa
 
           !> calculate and accumulate the volume (as for PV term) fraction, since it is basically free
-          rdotn = xyzp(1) * angGrid(1,ip) + xyzp(2) * angGrid(2,ip) + xyzp(3) * angGrid(3,ip)
-          voli = voli + rdotn * wsa
+          rdotn = xyzp(1)*angGrid(1,ip)+xyzp(2)*angGrid(2,ip)+xyzp(3)*angGrid(3,ip)
+          voli = voli+rdotn*wsa
 
           !> eq 3, calculation of xhcff grad
-          gradi(:,iat) = gradi(:,iat) + (angGrid(:,ip) * wsa)
+          gradi(:,iat) = gradi(:,iat)+(angGrid(:,ip)*wsa)
         end if
       end do
-      
-      !$omp critical
+
+      !!$omp critical
       !> finalize calculation here to save multipilications
-      area = area + sasai * 4.0_wp * pi
-      volume = volume + voli * 4.0_wp * pi / 3.0_wp
-      grad = grad + gradi * 4.0_wp * pi
-      !$omp end critical
+      area = area+sasai*4.0_wp*pi
+      volume = volume+voli*4.0_wp*pi/3.0_wp
+      grad = grad+gradi*4.0_wp*pi
+      !!$omp end critical
     end do
     !$omp end parallel do
 
     !> xhcff force field is not conservative and thus has no energy contribution
-    energy = volume * pressure
-    grad = grad * pressure
+    energy = volume*pressure
+    grad = grad*pressure
 
-    
     !> correct for translations and rotations
     trcorr(1:3) = sum(grad,dim=2)/nat
     do iat = 1,nat
@@ -170,7 +169,6 @@ contains  !> MODULE PROCEDURES START HERE
     end do
 
   end subroutine xhcff_eg
-
 
 !========================================================================================!
 

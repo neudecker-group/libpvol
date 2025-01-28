@@ -17,7 +17,7 @@
 ! along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 !================================================================================!
 
-!> this was used to extract tesselation info from surface calculator. 
+!> this was used to extract tesselation info from surface calculator.
 !> however tesselation is now done on the fly and this is not needed anymore
 ! Created by felix on 6/12/23.
 module tesspoints
