@@ -194,7 +194,7 @@ contains   !> MODULE PROCEDURES START HERE
     logical,intent(in) :: pr
 
     !> (optional) scaling factor for vdw radii
-    real(wp),intent(in) :: probe
+    real(wp),intent(in) :: scaling
     !> (optional) use Bondi vdW radii instead of D3
     logical,intent(in) :: Bondi
 
@@ -203,7 +203,7 @@ contains   !> MODULE PROCEDURES START HERE
     !> (optional) number of Lebedev grid points
     integer,intent(in),optional :: ngrid
     !> (optional) probe radius in Angstroem
-    real(wp),intent(in),optional :: scaling
+    real(wp),intent(in),optional :: probe
 
     !> LOCAL
     integer :: nAng
@@ -217,8 +217,8 @@ contains   !> MODULE PROCEDURES START HERE
     end if
 
     !> default setting for probe radius
-    self%probeRad_au = probe
-    self%probeRad_aa = probe*autoaa
+    self%probeRad_au = probe * aatoau 
+    self%probeRad_aa = probe
 
     ! TODO make not optional
     vdwRad = vanDerWaalsRadD3
