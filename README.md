@@ -2,7 +2,7 @@
 # PVol standalone library
 
 This repository contains a standalone implementation of
-the PV and XHCFF methods (https://doi.org/10.1063/5.0024671). 
+the PV and XHCFF methods (see DOI: 10.26434/chemrxiv-2024-xx932). 
 
 The project provides a statically linked library (`libpvol.a`) with Fortran and C++ interfaces that can be linked in other projects. A Python implementation via the C++ interface is also provided.
 
