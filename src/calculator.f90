@@ -193,8 +193,8 @@ contains   !> MODULE PROCEDURES START HERE
     !> printout flag
     logical,intent(in) :: pr
 
-    !> (optional) scaling factor for vdw radii
-    real(wp),intent(in) :: scaling
+    !> probe radius in Angstroem
+    real(wp),intent(in),optional :: probe
     !> (optional) use Bondi vdW radii instead of D3
     logical,intent(in) :: Bondi
 
@@ -202,8 +202,8 @@ contains   !> MODULE PROCEDURES START HERE
     integer,intent(inout) :: ierr
     !> (optional) number of Lebedev grid points
     integer,intent(in),optional :: ngrid
-    !> (optional) probe radius in Angstroem
-    real(wp),intent(in),optional :: probe
+    !> (optional) scaling factor for vdw radii
+    real(wp),intent(in), optional :: scaling
 
     !> LOCAL
     integer :: nAng
@@ -317,14 +317,9 @@ contains   !> MODULE PROCEDURES START HERE
       self%vdwsa(iat) = vdwRad(izp)+probeRad
       self%trj2(1,iat) = (self%vdwsa(iat)-w)**2
       self%trj2(2,iat) = (self%vdwsa(iat)+w)**2
-      r = self%vdwsa(iat)+w
-      self%wrp(iat) = (0.25_wp/w+ &
-         &            3.0_wp*ah3*(0.2_wp*r*r-0.5_wp*r*self%vdwsa(iat)+ &
-         &            self%vdwsa(iat)*self%vdwsa(iat)/3.0_wp))*r*r*r
-      r = self%vdwsa(iat)-w
-      self%wrp(iat) = self%wrp(iat)-(0.25/w+ &
-         &    3.0_wp*ah3*(0.2_wp*r*r-0.5_wp*r*self%vdwsa(iat)+ &
-         &            self%vdwsa(iat)*self%vdwsa(iat)/3.0_wp))*r*r*r
+      !> itegration weight is surface area of VDW sphere
+      r = self%vdwsa(iat)
+      self%wrp(iat) = r * r * 4 * pi
     end do
     self%srcut = 2*(w+maxval(self%vdwsa))+rOffset
 
