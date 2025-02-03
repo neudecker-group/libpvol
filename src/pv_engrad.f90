@@ -168,9 +168,9 @@ contains  !> MODULE PROCEDURES START HERE
       end do
       !> finalize eq 10
       !!$omp critical
-      area = area+sasai*4.0_wp*pi
-      volume = volume+voli*4.0_wp*pi/3.0_wp
-      grad = grad+gradi*4.0_wp*pi/3.0_wp
+      area = area+sasai
+      volume = volume+voli/3.0_wp
+      grad = grad+gradi/3.0_wp
       !!$omp end critical
     end do
     !$omp end parallel do

@@ -151,9 +151,9 @@ contains  !> MODULE PROCEDURES START HERE
 
       !!$omp critical
       !> finalize calculation here to save multipilications
-      area = area+sasai*4.0_wp*pi
-      volume = volume+voli*4.0_wp*pi/3.0_wp
-      grad = grad+gradi*4.0_wp*pi
+      area = area+sasai
+      volume = volume+voli/3.0_wp
+      grad = grad+gradi
       !!$omp end critical
     end do
     !$omp end parallel do
